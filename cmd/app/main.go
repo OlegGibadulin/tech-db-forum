@@ -2,9 +2,10 @@ package main
 
 import (
 	"database/sql"
+	"log"
+
 	"github.com/labstack/echo/v4"
 	_ "github.com/lib/pq"
-	"log"
 
 	"github.com/OlegGibadulin/tech-db-forum/config"
 	"github.com/OlegGibadulin/tech-db-forum/internal/mwares"

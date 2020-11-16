@@ -1,8 +1,6 @@
 package delivery
 
 import (
-	// . "github.com/OlegGibadulin/tech-db-forum/internal/consts"
-	// "github.com/OlegGibadulin/tech-db-forum/internal/helpers/errors"
 	"net/http"
 
 	"github.com/OlegGibadulin/tech-db-forum/internal/models"
@@ -25,6 +23,7 @@ func NewUserHandler(userUcase user.UserUsecase) *UserHandler {
 
 func (uh *UserHandler) Configure(e *echo.Echo, mw *mwares.MiddlewareManager) {
 	e.POST("/api/user/:nickname/create", uh.CreateUserHandler())
+	e.GET("/api/user/:nickname/profile", uh.GetUserHandler())
 	e.POST("/api/user/:nickname/profile", uh.UpdateUserHandler())
 }
 
@@ -61,6 +60,18 @@ func (uh *UserHandler) UpdateUserHandler() echo.HandlerFunc {
 		}
 
 		user, err := uh.userUcase.Update(&req.User)
+		if err != nil {
+			logrus.Error(err.Message)
+			return cntx.JSON(err.HTTPCode, err.Response())
+		}
+		return cntx.JSON(http.StatusOK, user)
+	}
+}
+
+func (uh *UserHandler) GetUserHandler() echo.HandlerFunc {
+	return func(cntx echo.Context) error {
+		nickname := cntx.Param("nickname")
+		user, err := uh.userUcase.GetByNickname(nickname)
 		if err != nil {
 			logrus.Error(err.Message)
 			return cntx.JSON(err.HTTPCode, err.Response())

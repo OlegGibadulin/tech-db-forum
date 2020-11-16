@@ -1,9 +1,10 @@
 package mwares
 
 import (
+	"time"
+
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
-	"time"
 )
 
 type MiddlewareManager struct{}
