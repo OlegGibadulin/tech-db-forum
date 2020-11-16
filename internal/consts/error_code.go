@@ -8,4 +8,6 @@ const (
 	CodeUserAlreadyExists
 	CodeUserDoesNotExist
 	CodeEmailAlreadyExists
+	CodeForumAlreadyExists
+	CodeForumDoesNotExist
 )
