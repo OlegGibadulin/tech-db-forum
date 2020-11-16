@@ -77,9 +77,13 @@ var Errors = map[ErrorCode]*Error{
 	},
 	CodeUserDoesNotExist: {
 		HTTPCode: http.StatusBadRequest,
-		Message:  "Can't find user with %s",
+		Message:  "Can't find user with %s %s",
 	},
 	CodeUserAlreadyExists: {
 		HTTPCode: http.StatusConflict,
+	},
+	CodeEmailAlreadyExists: {
+		HTTPCode: http.StatusConflict,
+		Message:  "User with email %s already exists",
 	},
 }

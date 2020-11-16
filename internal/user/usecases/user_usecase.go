@@ -35,11 +35,40 @@ func (uu *UserUsecase) Create(user *models.User) *errors.Error {
 	return nil
 }
 
+func (uu *UserUsecase) Update(newUserData *models.User) (*models.User, *errors.Error) {
+	user, customErr := uu.GetByNickname(newUserData.Nickname)
+	if customErr != nil {
+		return nil, customErr
+	}
+
+	// Checking for existence of user with this email
+	if user.Email != newUserData.Email {
+		_, customErr := uu.GetByEmail(newUserData.Email)
+		if customErr == nil {
+			customErr = errors.BuildByMsg(CodeEmailAlreadyExists, newUserData.Email)
+			return nil, customErr
+		}
+		user.Email = newUserData.Email
+	}
+
+	if newUserData.Fullname != "" {
+		user.Fullname = newUserData.Fullname
+	}
+	if newUserData.About != "" {
+		user.About = newUserData.About
+	}
+
+	if err := uu.userRepo.Update(user); err != nil {
+		return nil, errors.New(CodeInternalError, err)
+	}
+	return user, nil
+}
+
 func (uu *UserUsecase) GetByNickname(nickname string) (*models.User, *errors.Error) {
 	user, err := uu.userRepo.SelectByNickname(nickname)
 	switch {
 	case err == sql.ErrNoRows:
-		return nil, errors.BuildByMsg(CodeUserDoesNotExist, nickname)
+		return nil, errors.BuildByMsg(CodeUserDoesNotExist, "nickname", nickname)
 	case err != nil:
 		return nil, errors.New(CodeInternalError, err)
 	}
@@ -50,7 +79,7 @@ func (uu *UserUsecase) GetByEmail(email string) (*models.User, *errors.Error) {
 	user, err := uu.userRepo.SelectByEmail(email)
 	switch {
 	case err == sql.ErrNoRows:
-		return nil, errors.BuildByMsg(CodeUserDoesNotExist, email)
+		return nil, errors.BuildByMsg(CodeUserDoesNotExist, "email", email)
 	case err != nil:
 		return nil, errors.New(CodeInternalError, err)
 	}

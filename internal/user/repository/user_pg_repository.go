@@ -39,6 +39,28 @@ func (ur *UserPgRepository) Insert(user *models.User) error {
 	return nil
 }
 
+func (ur *UserPgRepository) Update(user *models.User) error {
+	tx, err := ur.dbConn.BeginTx(context.Background(), &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+
+	_, err = ur.dbConn.Exec(
+		`UPDATE users
+		SET fullname = $2, email = $3, about = $4
+		WHERE nickname = $1;`,
+		user.Nickname, user.Fullname, user.Email, user.About)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (ur *UserPgRepository) SelectByNickname(nickname string) (*models.User, error) {
 	user := &models.User{}
 

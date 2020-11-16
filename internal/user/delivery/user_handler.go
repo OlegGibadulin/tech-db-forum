@@ -25,6 +25,7 @@ func NewUserHandler(userUcase user.UserUsecase) *UserHandler {
 
 func (uh *UserHandler) Configure(e *echo.Echo, mw *mwares.MiddlewareManager) {
 	e.POST("/api/user/:nickname/create", uh.CreateUserHandler())
+	e.POST("/api/user/:nickname/profile", uh.UpdateUserHandler())
 }
 
 func (uh *UserHandler) CreateUserHandler() echo.HandlerFunc {
@@ -43,7 +44,27 @@ func (uh *UserHandler) CreateUserHandler() echo.HandlerFunc {
 			logrus.Error(err.Message)
 			return cntx.JSON(err.HTTPCode, err.Response())
 		}
-
 		return cntx.JSON(http.StatusCreated, req.User)
+	}
+}
+
+func (uh *UserHandler) UpdateUserHandler() echo.HandlerFunc {
+	type Request struct {
+		models.User
+	}
+
+	return func(cntx echo.Context) error {
+		req := &Request{}
+		if err := reader.NewRequestReader(cntx).Read(req); err != nil {
+			logrus.Error(err.Message)
+			return cntx.JSON(err.HTTPCode, err.Response())
+		}
+
+		user, err := uh.userUcase.Update(&req.User)
+		if err != nil {
+			logrus.Error(err.Message)
+			return cntx.JSON(err.HTTPCode, err.Response())
+		}
+		return cntx.JSON(http.StatusOK, user)
 	}
 }
