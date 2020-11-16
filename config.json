@@ -1,0 +1,13 @@
+{
+  "database": {
+    "user": "postgres",
+    "password": "postgres",
+    "name": "tech-db-forum",
+    "host": "localhost",
+    "port": 5432
+  },
+  "server": {
+    "host": "localhost",
+    "port": 5000
+  }
+}
