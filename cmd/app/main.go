@@ -8,6 +8,10 @@ import (
 
 	"github.com/OlegGibadulin/tech-db-forum/config"
 	"github.com/OlegGibadulin/tech-db-forum/internal/mwares"
+
+	userHandler "github.com/OlegGibadulin/tech-db-forum/internal/user/delivery"
+	userRepo "github.com/OlegGibadulin/tech-db-forum/internal/user/repository"
+	userUsecase "github.com/OlegGibadulin/tech-db-forum/internal/user/usecases"
 )
 
 func main() {
@@ -28,8 +32,10 @@ func main() {
 	}
 
 	// Repository
+	userRepo := userRepo.NewUserPgRepository(dbConnection)
 
 	// Usecases
+	userUcase := userUsecase.NewUserUsecase(userRepo)
 
 	// Middleware
 	e := echo.New()
@@ -37,6 +43,9 @@ func main() {
 	e.Use(mw.PanicRecovering, mw.AccessLog)
 
 	// Delivery
+	userHandler := userHandler.NewUserHandler(userUcase)
+
+	userHandler.Configure(e, mw)
 
 	log.Fatal(e.Start(config.GetServerConnString()))
 }
