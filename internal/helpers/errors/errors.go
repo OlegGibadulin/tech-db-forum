@@ -10,9 +10,10 @@ import (
 type BodyType interface{}
 
 type Error struct {
-	HTTPCode int      `json:"-"`
-	Body     BodyType `json:"-"`
-	Message  string   `json:"message"`
+	Code     ErrorCode `json:"-"`
+	HTTPCode int       `json:"-"`
+	Body     BodyType  `json:"-"`
+	Message  string    `json:"message"`
 }
 
 var WrongErrorCode = &Error{
@@ -68,22 +69,36 @@ func (e *Error) Response() BodyType {
 
 var Errors = map[ErrorCode]*Error{
 	CodeBadRequest: {
+		Code:     CodeBadRequest,
 		HTTPCode: http.StatusBadRequest,
 		Message:  "Wrong request data",
 	},
 	CodeInternalError: {
+		Code:     CodeInternalError,
 		HTTPCode: http.StatusInternalServerError,
 		Message:  "Something went wrong",
 	},
+	CodeUserAlreadyExists: {
+		Code:     CodeUserAlreadyExists,
+		HTTPCode: http.StatusConflict,
+	},
 	CodeUserDoesNotExist: {
+		Code:     CodeUserDoesNotExist,
 		HTTPCode: http.StatusBadRequest,
 		Message:  "Can't find user with %s %s",
 	},
-	CodeUserAlreadyExists: {
-		HTTPCode: http.StatusConflict,
-	},
 	CodeEmailAlreadyExists: {
+		Code:     CodeEmailAlreadyExists,
 		HTTPCode: http.StatusConflict,
 		Message:  "User with email %s already exists",
+	},
+	CodeForumAlreadyExists: {
+		Code:     CodeForumAlreadyExists,
+		HTTPCode: http.StatusConflict,
+	},
+	CodeForumDoesNotExist: {
+		Code:     CodeForumDoesNotExist,
+		HTTPCode: http.StatusBadRequest,
+		Message:  "Can't find forum with %s %s",
 	},
 }
