@@ -58,3 +58,20 @@ func (tr *ThreadPgRepository) SelectBySlug(slug string) (*models.Thread, error) 
 	}
 	return thread, nil
 }
+
+func (tr *ThreadPgRepository) SelectByID(threadID uint64) (*models.Thread, error) {
+	thread := &models.Thread{}
+
+	row := tr.dbConn.QueryRow(
+		`SELECT id, title, author, message, created, forum, votes, slug
+		FROM threads
+		WHERE id=$1`,
+		threadID)
+
+	err := row.Scan(&thread.ID, &thread.Title, &thread.Author, &thread.Message, &thread.Created,
+		&thread.Forum, &thread.Votes, &thread.Slug)
+	if err != nil {
+		return nil, err
+	}
+	return thread, nil
+}

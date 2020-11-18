@@ -3,6 +3,8 @@ package usecases
 import (
 	"database/sql"
 
+	"strconv"
+
 	. "github.com/OlegGibadulin/tech-db-forum/internal/consts"
 	"github.com/OlegGibadulin/tech-db-forum/internal/helpers/errors"
 	"github.com/OlegGibadulin/tech-db-forum/internal/models"
@@ -41,6 +43,17 @@ func (tu *ThreadUsecase) GetBySlug(slug string) (*models.Thread, *errors.Error) 
 	switch {
 	case err == sql.ErrNoRows:
 		return nil, errors.BuildByMsg(CodeThreadDoesNotExist, "slug", slug)
+	case err != nil:
+		return nil, errors.New(CodeInternalError, err)
+	}
+	return thread, nil
+}
+
+func (tu *ThreadUsecase) GetByID(threadID uint64) (*models.Thread, *errors.Error) {
+	thread, err := tu.threadRepo.SelectByID(threadID)
+	switch {
+	case err == sql.ErrNoRows:
+		return nil, errors.BuildByMsg(CodeThreadDoesNotExist, "id", strconv.Itoa(int(threadID)))
 	case err != nil:
 		return nil, errors.New(CodeInternalError, err)
 	}
