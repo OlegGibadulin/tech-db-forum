@@ -96,3 +96,14 @@ func (uu *UserUsecase) ListByNicknameOrEmail(nickname string, email string) ([]*
 	}
 	return users, nil
 }
+
+func (uu *UserUsecase) ListByForum(forumSlug string, since string, filter *models.Filter) ([]*models.User, *errors.Error) {
+	users, err := uu.userRepo.SelectAllByForum(forumSlug, since, filter)
+	if err != nil {
+		return nil, errors.New(CodeInternalError, err)
+	}
+	if len(users) == 0 {
+		return []*models.User{}, nil
+	}
+	return users, nil
+}

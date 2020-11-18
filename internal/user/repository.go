@@ -8,4 +8,5 @@ type UserRepository interface {
 	SelectByNickname(nickname string) (*models.User, error)
 	SelectByEmail(email string) (*models.User, error)
 	SelectAllByNicknameOrEmail(nickname string, email string) ([]*models.User, error)
+	SelectAllByForum(forumSlug string, since string, filter *models.Filter) ([]*models.User, error)
 }

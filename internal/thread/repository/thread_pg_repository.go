@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"strconv"
 	"strings"
 
 	"github.com/OlegGibadulin/tech-db-forum/internal/models"
@@ -122,16 +121,16 @@ func (tr *ThreadPgRepository) SelectAllByForum(forumSlug string, filter *models.
 		values = append(values, filter.Limit)
 	}
 
-	var filterQuery string
-	if !filter.Since.IsZero() {
-		ind := len(values) + 1
-		filterQuery = "AND created >= $" + strconv.Itoa(ind)
-		values = append(values, filter.Since)
-	}
+	// var filterQuery string
+	// if !filter.SinceTime.IsZero() {
+	// 	ind := len(values) + 1
+	// 	filterQuery = "AND created >= $" + strconv.Itoa(ind)
+	// 	values = append(values, filter.SinceTime)
+	// }
 
 	resultQuery := strings.Join([]string{
 		selectQuery,
-		filterQuery,
+		// filterQuery,
 		sortQuery,
 		pgntQuery,
 	}, " ")

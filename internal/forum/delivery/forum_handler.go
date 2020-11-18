@@ -27,6 +27,7 @@ func NewForumHandler(forumUcase forum.ForumUsecase, userUcase user.UserUsecase) 
 func (fh *ForumHandler) Configure(e *echo.Echo, mw *mwares.MiddlewareManager) {
 	e.POST("/api/forum/create", fh.CreateForumHandler())
 	e.GET("/api/forum/:slug/details", fh.GetForumDetailesHandler())
+	e.GET("/api/forum/:slug/users", fh.GetUsersByForumHandler())
 }
 
 func (fh *ForumHandler) CreateForumHandler() echo.HandlerFunc {
@@ -63,5 +64,33 @@ func (fh *ForumHandler) GetForumDetailesHandler() echo.HandlerFunc {
 			return cntx.JSON(err.HTTPCode, err.Response())
 		}
 		return cntx.JSON(http.StatusOK, forum)
+	}
+}
+
+func (fh *ForumHandler) GetUsersByForumHandler() echo.HandlerFunc {
+	type Request struct {
+		Slug  string `json:"slug" validate:"required,gte=3,lte=64"`
+		Since string `query:"since"`
+		models.Filter
+	}
+
+	return func(cntx echo.Context) error {
+		req := &Request{}
+		if err := reader.NewRequestReader(cntx).Read(req); err != nil {
+			logrus.Error(err.Message)
+			return cntx.JSON(err.HTTPCode, err.Response())
+		}
+
+		if _, err := fh.forumUcase.GetBySlug(req.Slug); err != nil {
+			logrus.Error(err.Message)
+			return cntx.JSON(err.HTTPCode, err.Response())
+		}
+
+		users, err := fh.userUcase.ListByForum(req.Slug, req.Since, &req.Filter)
+		if err != nil {
+			logrus.Error(err.Message)
+			return cntx.JSON(err.HTTPCode, err.Response())
+		}
+		return cntx.JSON(http.StatusOK, users)
 	}
 }
