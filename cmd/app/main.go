@@ -14,13 +14,13 @@ import (
 	userRepo "github.com/OlegGibadulin/tech-db-forum/internal/user/repository"
 	userUsecase "github.com/OlegGibadulin/tech-db-forum/internal/user/usecases"
 
-	forumHandler "github.com/OlegGibadulin/tech-db-forum/internal/forum/delivery"
-	forumRepo "github.com/OlegGibadulin/tech-db-forum/internal/forum/repository"
-	forumUsecase "github.com/OlegGibadulin/tech-db-forum/internal/forum/usecases"
-
 	threadHandler "github.com/OlegGibadulin/tech-db-forum/internal/thread/delivery"
 	threadRepo "github.com/OlegGibadulin/tech-db-forum/internal/thread/repository"
 	threadUsecase "github.com/OlegGibadulin/tech-db-forum/internal/thread/usecases"
+
+	forumHandler "github.com/OlegGibadulin/tech-db-forum/internal/forum/delivery"
+	forumRepo "github.com/OlegGibadulin/tech-db-forum/internal/forum/repository"
+	forumUsecase "github.com/OlegGibadulin/tech-db-forum/internal/forum/usecases"
 )
 
 func main() {
@@ -42,13 +42,13 @@ func main() {
 
 	// Repository
 	userRepo := userRepo.NewUserPgRepository(dbConnection)
-	forumRepo := forumRepo.NewForumPgRepository(dbConnection)
 	threadRepo := threadRepo.NewThreadPgRepository(dbConnection)
+	forumRepo := forumRepo.NewForumPgRepository(dbConnection)
 
 	// Usecases
 	userUcase := userUsecase.NewUserUsecase(userRepo)
-	forumUcase := forumUsecase.NewForumUsecase(forumRepo)
 	threadUcase := threadUsecase.NewThreadUsecase(threadRepo)
+	forumUcase := forumUsecase.NewForumUsecase(forumRepo)
 
 	// Middleware
 	e := echo.New()
@@ -57,12 +57,12 @@ func main() {
 
 	// Delivery
 	userHandler := userHandler.NewUserHandler(userUcase)
-	forumHandler := forumHandler.NewForumHandler(forumUcase, userUcase)
-	threadHandler := threadHandler.NewThreadHandler(threadUcase, userUcase, forumUcase)
+	threadHandler := threadHandler.NewThreadHandler(threadUcase, userUcase)
+	forumHandler := forumHandler.NewForumHandler(forumUcase, userUcase, threadUcase)
 
 	userHandler.Configure(e, mw)
-	forumHandler.Configure(e, mw)
 	threadHandler.Configure(e, mw)
+	forumHandler.Configure(e, mw)
 
 	log.Fatal(e.Start(config.GetServerConnString()))
 }

@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"database/sql"
+	"time"
 
 	"strconv"
 
@@ -99,8 +100,8 @@ func (tu *ThreadUsecase) GetBySlugOrID(threadSlugOrID string) (*models.Thread, *
 	return thread, nil
 }
 
-func (tu *ThreadUsecase) ListByForum(forumSlug string, filter *models.Filter) ([]*models.Thread, *errors.Error) {
-	threads, err := tu.threadRepo.SelectAllByForum(forumSlug, filter)
+func (tu *ThreadUsecase) ListByForum(forumSlug string, since time.Time, pgnt *models.Pagination) ([]*models.Thread, *errors.Error) {
+	threads, err := tu.threadRepo.SelectAllByForum(forumSlug, since, pgnt)
 	if err != nil {
 		return nil, errors.New(CodeInternalError, err)
 	}

@@ -122,7 +122,7 @@ func (ur *UserPgRepository) SelectAllByNicknameOrEmail(nickname string, email st
 	return users, nil
 }
 
-func (ur *UserPgRepository) SelectAllByForum(forumSlug string, since string, filter *models.Filter) ([]*models.User, error) {
+func (ur *UserPgRepository) SelectAllByForum(forumSlug string, since string, pgnt *models.Pagination) ([]*models.User, error) {
 	var values []interface{}
 
 	selectQuery := `
@@ -133,16 +133,16 @@ func (ur *UserPgRepository) SelectAllByForum(forumSlug string, since string, fil
 	values = append(values, forumSlug)
 
 	var sortQuery string
-	if filter.Desc {
+	if pgnt.Desc {
 		sortQuery = "ORDER BY u.nickname DESC"
 	} else {
 		sortQuery = "ORDER BY u.nickname"
 	}
 
 	var pgntQuery string
-	if filter.Limit != 0 {
+	if pgnt.Limit != 0 {
 		pgntQuery = "LIMIT $2"
-		values = append(values, filter.Limit)
+		values = append(values, pgnt.Limit)
 	}
 
 	var filterQuery string

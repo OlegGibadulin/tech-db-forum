@@ -3,7 +3,9 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/OlegGibadulin/tech-db-forum/internal/models"
 	"github.com/OlegGibadulin/tech-db-forum/internal/thread"
@@ -99,7 +101,7 @@ func (tr *ThreadPgRepository) SelectByID(threadID uint64) (*models.Thread, error
 	return thread, nil
 }
 
-func (tr *ThreadPgRepository) SelectAllByForum(forumSlug string, filter *models.Filter) ([]*models.Thread, error) {
+func (tr *ThreadPgRepository) SelectAllByForum(forumSlug string, since time.Time, pgnt *models.Pagination) ([]*models.Thread, error) {
 	var values []interface{}
 
 	selectQuery := `
@@ -109,28 +111,28 @@ func (tr *ThreadPgRepository) SelectAllByForum(forumSlug string, filter *models.
 	values = append(values, forumSlug)
 
 	var sortQuery string
-	if filter.Desc {
+	if pgnt.Desc {
 		sortQuery = "ORDER BY created DESC"
 	} else {
 		sortQuery = "ORDER BY created"
 	}
 
 	var pgntQuery string
-	if filter.Limit != 0 {
+	if pgnt.Limit != 0 {
 		pgntQuery = "LIMIT $2"
-		values = append(values, filter.Limit)
+		values = append(values, pgnt.Limit)
 	}
 
-	// var filterQuery string
-	// if !filter.SinceTime.IsZero() {
-	// 	ind := len(values) + 1
-	// 	filterQuery = "AND created >= $" + strconv.Itoa(ind)
-	// 	values = append(values, filter.SinceTime)
-	// }
+	var filterQuery string
+	if !since.IsZero() {
+		ind := len(values) + 1
+		filterQuery = "AND created >= $" + strconv.Itoa(ind)
+		values = append(values, since)
+	}
 
 	resultQuery := strings.Join([]string{
 		selectQuery,
-		// filterQuery,
+		filterQuery,
 		sortQuery,
 		pgntQuery,
 	}, " ")

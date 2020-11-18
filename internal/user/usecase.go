@@ -11,5 +11,5 @@ type UserUsecase interface {
 	GetByNickname(nickname string) (*models.User, *errors.Error)
 	GetByEmail(email string) (*models.User, *errors.Error)
 	ListByNicknameOrEmail(nickname string, email string) ([]*models.User, *errors.Error)
-	ListByForum(forumSlug string, since string, filter *models.Filter) ([]*models.User, *errors.Error)
+	ListByForum(forumSlug string, since string, pgnt *models.Pagination) ([]*models.User, *errors.Error)
 }
