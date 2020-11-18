@@ -26,6 +26,7 @@ func NewForumHandler(forumUcase forum.ForumUsecase, userUcase user.UserUsecase) 
 
 func (uh *ForumHandler) Configure(e *echo.Echo, mw *mwares.MiddlewareManager) {
 	e.POST("/api/forum/create", uh.CreateForumHandler())
+	e.GET("/api/forum/:slug/details", uh.GetForumDetailesHandler())
 }
 
 func (uh *ForumHandler) CreateForumHandler() echo.HandlerFunc {
@@ -50,5 +51,17 @@ func (uh *ForumHandler) CreateForumHandler() echo.HandlerFunc {
 			return cntx.JSON(err.HTTPCode, err.Response())
 		}
 		return cntx.JSON(http.StatusCreated, req.Forum)
+	}
+}
+
+func (uh *ForumHandler) GetForumDetailesHandler() echo.HandlerFunc {
+	return func(cntx echo.Context) error {
+		slug := cntx.Param("slug")
+		forum, err := uh.forumUcase.GetBySlug(slug)
+		if err != nil {
+			logrus.Error(err.Message)
+			return cntx.JSON(err.HTTPCode, err.Response())
+		}
+		return cntx.JSON(http.StatusOK, forum)
 	}
 }
