@@ -3,6 +3,8 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"strconv"
+	"strings"
 
 	"github.com/OlegGibadulin/tech-db-forum/internal/models"
 	"github.com/OlegGibadulin/tech-db-forum/internal/thread"
@@ -96,4 +98,62 @@ func (tr *ThreadPgRepository) SelectByID(threadID uint64) (*models.Thread, error
 		return nil, err
 	}
 	return thread, nil
+}
+
+func (tr *ThreadPgRepository) SelectAllByForum(forumSlug string, filter *models.Filter) ([]*models.Thread, error) {
+	var values []interface{}
+
+	selectQuery := `
+		SELECT id, title, author, message, created, forum, votes, slug
+		FROM threads
+		WHERE forum=$1`
+	values = append(values, forumSlug)
+
+	var sortQuery string
+	if filter.Desc {
+		sortQuery = "ORDER BY created DESC"
+	} else {
+		sortQuery = "ORDER BY created"
+	}
+
+	var pgntQuery string
+	if filter.Limit != 0 {
+		pgntQuery = "LIMIT $2"
+		values = append(values, filter.Limit)
+	}
+
+	var filterQuery string
+	if !filter.Since.IsZero() {
+		ind := len(values) + 1
+		filterQuery = "AND created >= $" + strconv.Itoa(ind)
+		values = append(values, filter.Since)
+	}
+
+	resultQuery := strings.Join([]string{
+		selectQuery,
+		filterQuery,
+		sortQuery,
+		pgntQuery,
+	}, " ")
+
+	rows, err := tr.dbConn.Query(resultQuery, values...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var threads []*models.Thread
+	for rows.Next() {
+		thread := &models.Thread{}
+		err := rows.Scan(&thread.ID, &thread.Title, &thread.Author, &thread.Message, &thread.Created,
+			&thread.Forum, &thread.Votes, &thread.Slug)
+		if err != nil {
+			return nil, err
+		}
+		threads = append(threads, thread)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return threads, nil
 }

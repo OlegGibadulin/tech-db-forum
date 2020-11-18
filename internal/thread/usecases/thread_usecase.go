@@ -98,3 +98,14 @@ func (tu *ThreadUsecase) GetBySlugOrID(threadSlugOrID string) (*models.Thread, *
 	}
 	return thread, nil
 }
+
+func (tu *ThreadUsecase) ListByForum(forumSlug string, filter *models.Filter) ([]*models.Thread, *errors.Error) {
+	threads, err := tu.threadRepo.SelectAllByForum(forumSlug, filter)
+	if err != nil {
+		return nil, errors.New(CodeInternalError, err)
+	}
+	if len(threads) == 0 {
+		return []*models.Thread{}, nil
+	}
+	return threads, nil
+}

@@ -31,6 +31,7 @@ func (th *ThreadHandler) Configure(e *echo.Echo, mw *mwares.MiddlewareManager) {
 	e.POST("/api/forum/:forum/create", th.CreateThreadHandler())
 	e.GET("/api/thread/:slug_or_id/details", th.GetThreadDetailesHandler())
 	e.POST("/api/thread/:slug_or_id/details", th.UpdateThreadHandler())
+	e.GET("/api/forum/:forum/threads", th.GetThreadsByForumHandler())
 }
 
 func (th *ThreadHandler) CreateThreadHandler() echo.HandlerFunc {
@@ -101,5 +102,27 @@ func (th *ThreadHandler) GetThreadDetailesHandler() echo.HandlerFunc {
 			return cntx.JSON(err.HTTPCode, err.Response())
 		}
 		return cntx.JSON(http.StatusOK, thread)
+	}
+}
+
+func (th *ThreadHandler) GetThreadsByForumHandler() echo.HandlerFunc {
+	type Request struct {
+		Forum string `json:"forum" validate:"required,gte=3,lte=64"`
+		models.Filter
+	}
+
+	return func(cntx echo.Context) error {
+		req := &Request{}
+		if err := reader.NewRequestReader(cntx).Read(req); err != nil {
+			logrus.Error(err.Message)
+			return cntx.JSON(err.HTTPCode, err.Response())
+		}
+
+		threads, err := th.threadUcase.ListByForum(req.Forum, &req.Filter)
+		if err != nil {
+			logrus.Error(err.Message)
+			return cntx.JSON(err.HTTPCode, err.Response())
+		}
+		return cntx.JSON(http.StatusOK, threads)
 	}
 }
