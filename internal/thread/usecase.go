@@ -7,6 +7,8 @@ import (
 
 type ThreadUsecase interface {
 	Create(thread *models.Thread) *errors.Error
-	GetBySlug(slug string) (*models.Thread, *errors.Error)
+	Update(threadSlugOrID string, threadData *models.Thread) (*models.Thread, *errors.Error)
+	GetBySlug(threadSlug string) (*models.Thread, *errors.Error)
 	GetByID(threadID uint64) (*models.Thread, *errors.Error)
+	GetBySlugOrID(threadSlugOrID string) (*models.Thread, *errors.Error)
 }

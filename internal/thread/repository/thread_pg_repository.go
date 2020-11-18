@@ -42,6 +42,28 @@ func (tr *ThreadPgRepository) Insert(thread *models.Thread) error {
 	return nil
 }
 
+func (tr *ThreadPgRepository) Update(thread *models.Thread) error {
+	tx, err := tr.dbConn.BeginTx(context.Background(), &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+
+	_, err = tr.dbConn.Exec(
+		`UPDATE threads
+		SET title = $2, message = $3
+		WHERE id = $1;`,
+		thread.ID, thread.Title, thread.Message)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (tr *ThreadPgRepository) SelectBySlug(slug string) (*models.Thread, error) {
 	thread := &models.Thread{}
 
