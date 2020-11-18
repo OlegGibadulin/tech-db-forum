@@ -17,6 +17,10 @@ import (
 	forumHandler "github.com/OlegGibadulin/tech-db-forum/internal/forum/delivery"
 	forumRepo "github.com/OlegGibadulin/tech-db-forum/internal/forum/repository"
 	forumUsecase "github.com/OlegGibadulin/tech-db-forum/internal/forum/usecases"
+
+	threadHandler "github.com/OlegGibadulin/tech-db-forum/internal/thread/delivery"
+	threadRepo "github.com/OlegGibadulin/tech-db-forum/internal/thread/repository"
+	threadUsecase "github.com/OlegGibadulin/tech-db-forum/internal/thread/usecases"
 )
 
 func main() {
@@ -39,10 +43,12 @@ func main() {
 	// Repository
 	userRepo := userRepo.NewUserPgRepository(dbConnection)
 	forumRepo := forumRepo.NewForumPgRepository(dbConnection)
+	threadRepo := threadRepo.NewThreadPgRepository(dbConnection)
 
 	// Usecases
 	userUcase := userUsecase.NewUserUsecase(userRepo)
 	forumUcase := forumUsecase.NewForumUsecase(forumRepo)
+	threadUcase := threadUsecase.NewThreadUsecase(threadRepo)
 
 	// Middleware
 	e := echo.New()
@@ -52,9 +58,11 @@ func main() {
 	// Delivery
 	userHandler := userHandler.NewUserHandler(userUcase)
 	forumHandler := forumHandler.NewForumHandler(forumUcase, userUcase)
+	threadHandler := threadHandler.NewThreadHandler(threadUcase, userUcase, forumUcase)
 
 	userHandler.Configure(e, mw)
 	forumHandler.Configure(e, mw)
+	threadHandler.Configure(e, mw)
 
 	log.Fatal(e.Start(config.GetServerConnString()))
 }

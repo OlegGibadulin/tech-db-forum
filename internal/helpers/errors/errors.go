@@ -101,4 +101,13 @@ var Errors = map[ErrorCode]*Error{
 		HTTPCode: http.StatusBadRequest,
 		Message:  "Can't find forum with %s %s",
 	},
+	CodeThreadAlreadyExists: {
+		Code:     CodeThreadAlreadyExists,
+		HTTPCode: http.StatusConflict,
+	},
+	CodeThreadDoesNotExist: {
+		Code:     CodeThreadDoesNotExist,
+		HTTPCode: http.StatusBadRequest,
+		Message:  "Can't find thread with %s %s",
+	},
 }
