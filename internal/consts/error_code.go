@@ -10,4 +10,6 @@ const (
 	CodeEmailAlreadyExists
 	CodeForumAlreadyExists
 	CodeForumDoesNotExist
+	CodeThreadAlreadyExists
+	CodeThreadDoesNotExist
 )

@@ -24,12 +24,12 @@ func NewForumHandler(forumUcase forum.ForumUsecase, userUcase user.UserUsecase) 
 	}
 }
 
-func (uh *ForumHandler) Configure(e *echo.Echo, mw *mwares.MiddlewareManager) {
-	e.POST("/api/forum/create", uh.CreateForumHandler())
-	e.GET("/api/forum/:slug/details", uh.GetForumDetailesHandler())
+func (fh *ForumHandler) Configure(e *echo.Echo, mw *mwares.MiddlewareManager) {
+	e.POST("/api/forum/create", fh.CreateForumHandler())
+	e.GET("/api/forum/:slug/details", fh.GetForumDetailesHandler())
 }
 
-func (uh *ForumHandler) CreateForumHandler() echo.HandlerFunc {
+func (fh *ForumHandler) CreateForumHandler() echo.HandlerFunc {
 	type Request struct {
 		models.Forum
 	}
@@ -41,12 +41,12 @@ func (uh *ForumHandler) CreateForumHandler() echo.HandlerFunc {
 			return cntx.JSON(err.HTTPCode, err.Response())
 		}
 
-		if _, err := uh.userUcase.GetByNickname(req.User); err != nil {
+		if _, err := fh.userUcase.GetByNickname(req.User); err != nil {
 			logrus.Error(err.Message)
 			return cntx.JSON(err.HTTPCode, err.Response())
 		}
 
-		if err := uh.forumUcase.Create(&req.Forum); err != nil {
+		if err := fh.forumUcase.Create(&req.Forum); err != nil {
 			logrus.Error(err.Message)
 			return cntx.JSON(err.HTTPCode, err.Response())
 		}
@@ -54,10 +54,10 @@ func (uh *ForumHandler) CreateForumHandler() echo.HandlerFunc {
 	}
 }
 
-func (uh *ForumHandler) GetForumDetailesHandler() echo.HandlerFunc {
+func (fh *ForumHandler) GetForumDetailesHandler() echo.HandlerFunc {
 	return func(cntx echo.Context) error {
 		slug := cntx.Param("slug")
-		forum, err := uh.forumUcase.GetBySlug(slug)
+		forum, err := fh.forumUcase.GetBySlug(slug)
 		if err != nil {
 			logrus.Error(err.Message)
 			return cntx.JSON(err.HTTPCode, err.Response())
