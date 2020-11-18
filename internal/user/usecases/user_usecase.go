@@ -35,14 +35,14 @@ func (uu *UserUsecase) Create(user *models.User) *errors.Error {
 	return nil
 }
 
-func (uu *UserUsecase) Update(newUserData *models.User) (*models.User, *errors.Error) {
-	user, customErr := uu.GetByNickname(newUserData.Nickname)
+func (uu *UserUsecase) Update(nickname string, newUserData *models.User) (*models.User, *errors.Error) {
+	user, customErr := uu.GetByNickname(nickname)
 	if customErr != nil {
 		return nil, customErr
 	}
 
 	// Checking for existence of user with this email
-	if user.Email != newUserData.Email {
+	if newUserData.Email != "" && newUserData.Email != user.Email {
 		_, customErr := uu.GetByEmail(newUserData.Email)
 		if customErr == nil {
 			customErr = errors.BuildByMsg(CodeEmailAlreadyExists, newUserData.Email)
