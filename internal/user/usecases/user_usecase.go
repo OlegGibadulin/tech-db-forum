@@ -35,14 +35,14 @@ func (uu *UserUsecase) Create(user *models.User) *errors.Error {
 	return nil
 }
 
-func (uu *UserUsecase) Update(newUserData *models.User) (*models.User, *errors.Error) {
-	user, customErr := uu.GetByNickname(newUserData.Nickname)
+func (uu *UserUsecase) Update(nickname string, newUserData *models.User) (*models.User, *errors.Error) {
+	user, customErr := uu.GetByNickname(nickname)
 	if customErr != nil {
 		return nil, customErr
 	}
 
 	// Checking for existence of user with this email
-	if user.Email != newUserData.Email {
+	if newUserData.Email != "" && newUserData.Email != user.Email {
 		_, customErr := uu.GetByEmail(newUserData.Email)
 		if customErr == nil {
 			customErr = errors.BuildByMsg(CodeEmailAlreadyExists, newUserData.Email)
@@ -88,6 +88,17 @@ func (uu *UserUsecase) GetByEmail(email string) (*models.User, *errors.Error) {
 
 func (uu *UserUsecase) ListByNicknameOrEmail(nickname string, email string) ([]*models.User, *errors.Error) {
 	users, err := uu.userRepo.SelectAllByNicknameOrEmail(nickname, email)
+	if err != nil {
+		return nil, errors.New(CodeInternalError, err)
+	}
+	if len(users) == 0 {
+		return []*models.User{}, nil
+	}
+	return users, nil
+}
+
+func (uu *UserUsecase) ListByForum(forumSlug string, since string, pgnt *models.Pagination) ([]*models.User, *errors.Error) {
+	users, err := uu.userRepo.SelectAllByForum(forumSlug, since, pgnt)
 	if err != nil {
 		return nil, errors.New(CodeInternalError, err)
 	}

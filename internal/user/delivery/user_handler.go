@@ -49,7 +49,9 @@ func (uh *UserHandler) CreateUserHandler() echo.HandlerFunc {
 
 func (uh *UserHandler) UpdateUserHandler() echo.HandlerFunc {
 	type Request struct {
-		models.User
+		Fullname string `json:"fullname" validate:"omitempty,gte=3,lte=32"`
+		Email    string `json:"email" validate:"omitempty,email,lte=32"`
+		About    string `json:"about" validate:"lte=256"`
 	}
 
 	return func(cntx echo.Context) error {
@@ -59,7 +61,14 @@ func (uh *UserHandler) UpdateUserHandler() echo.HandlerFunc {
 			return cntx.JSON(err.HTTPCode, err.Response())
 		}
 
-		user, err := uh.userUcase.Update(&req.User)
+		nickname := cntx.Param("nickname")
+		userData := &models.User{
+			Fullname: req.Fullname,
+			Email:    req.Email,
+			About:    req.About,
+		}
+
+		user, err := uh.userUcase.Update(nickname, userData)
 		if err != nil {
 			logrus.Error(err.Message)
 			return cntx.JSON(err.HTTPCode, err.Response())

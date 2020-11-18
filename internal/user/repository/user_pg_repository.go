@@ -3,6 +3,8 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"strconv"
+	"strings"
 
 	"github.com/OlegGibadulin/tech-db-forum/internal/models"
 	"github.com/OlegGibadulin/tech-db-forum/internal/user"
@@ -114,6 +116,64 @@ func (ur *UserPgRepository) SelectAllByNicknameOrEmail(nickname string, email st
 		users = append(users, user)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+func (ur *UserPgRepository) SelectAllByForum(forumSlug string, since string, pgnt *models.Pagination) ([]*models.User, error) {
+	var values []interface{}
+
+	selectQuery := `
+		SELECT u.nickname, u.fullname, u.email, u.about
+		FROM forum_user AS fu
+		JOIN users AS u ON u.nickname=fu.nickname
+		WHERE forum=$1`
+	values = append(values, forumSlug)
+
+	var sortQuery string
+	if pgnt.Desc {
+		sortQuery = "ORDER BY u.nickname DESC"
+	} else {
+		sortQuery = "ORDER BY u.nickname"
+	}
+
+	var pgntQuery string
+	if pgnt.Limit != 0 {
+		pgntQuery = "LIMIT $2"
+		values = append(values, pgnt.Limit)
+	}
+
+	var filterQuery string
+	if since != "" {
+		ind := len(values) + 1
+		filterQuery = "AND u.nickname > $" + strconv.Itoa(ind)
+		values = append(values, since)
+	}
+
+	resultQuery := strings.Join([]string{
+		selectQuery,
+		filterQuery,
+		sortQuery,
+		pgntQuery,
+	}, " ")
+
+	rows, err := ur.dbConn.Query(resultQuery, values...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []*models.User
+	for rows.Next() {
+		user := &models.User{}
+		err := rows.Scan(&user.Nickname, &user.Fullname, &user.Email, &user.About)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}

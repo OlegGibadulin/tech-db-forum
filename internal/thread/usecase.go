@@ -1,6 +1,8 @@
 package thread
 
 import (
+	"time"
+
 	"github.com/OlegGibadulin/tech-db-forum/internal/helpers/errors"
 	"github.com/OlegGibadulin/tech-db-forum/internal/models"
 )
@@ -11,5 +13,5 @@ type ThreadUsecase interface {
 	GetBySlug(threadSlug string) (*models.Thread, *errors.Error)
 	GetByID(threadID uint64) (*models.Thread, *errors.Error)
 	GetBySlugOrID(threadSlugOrID string) (*models.Thread, *errors.Error)
-	ListByForum(forumSlug string, filter *models.Filter) ([]*models.Thread, *errors.Error)
+	ListByForum(forumSlug string, since time.Time, pgnt *models.Pagination) ([]*models.Thread, *errors.Error)
 }
