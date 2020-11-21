@@ -110,4 +110,14 @@ var Errors = map[ErrorCode]*Error{
 		HTTPCode: http.StatusBadRequest,
 		Message:  "Can't find thread with %s %s",
 	},
+	CodeParentPostDoesNotExist: {
+		Code:     CodeParentPostDoesNotExist,
+		HTTPCode: http.StatusConflict,
+		Message:  "Can't find parent post with %s %s",
+	},
+	CodePostDoesNotExist: {
+		Code:     CodePostDoesNotExist,
+		HTTPCode: http.StatusBadRequest,
+		Message:  "Can't find post with %s %s",
+	},
 }

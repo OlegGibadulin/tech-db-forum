@@ -12,4 +12,6 @@ const (
 	CodeForumDoesNotExist
 	CodeThreadAlreadyExists
 	CodeThreadDoesNotExist
+	CodeParentPostDoesNotExist
+	CodePostDoesNotExist
 )
