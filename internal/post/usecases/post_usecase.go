@@ -1,6 +1,8 @@
 package usecases
 
 import (
+	"database/sql"
+
 	"strconv"
 
 	. "github.com/OlegGibadulin/tech-db-forum/internal/consts"
@@ -27,6 +29,33 @@ func (pu *PostUsecase) Create(posts []*models.Post, threadID uint64) *errors.Err
 		return errors.New(CodeInternalError, err)
 	}
 	return nil
+}
+
+func (pu *PostUsecase) Update(postID uint64, postData *models.Post) (*models.Post, *errors.Error) {
+	post, customErr := pu.GetByID(postID)
+	if customErr != nil {
+		return nil, customErr
+	}
+
+	if postData.Message != "" {
+		post.Message = postData.Message
+	}
+
+	if err := pu.postRepo.Update(post); err != nil {
+		return nil, errors.New(CodeInternalError, err)
+	}
+	return post, nil
+}
+
+func (pu *PostUsecase) GetByID(postID uint64) (*models.Post, *errors.Error) {
+	post, err := pu.postRepo.SelectByID(postID)
+	switch {
+	case err == sql.ErrNoRows:
+		return nil, errors.BuildByMsg(CodePostDoesNotExist, "id", strconv.Itoa(int(postID)))
+	case err != nil:
+		return nil, errors.New(CodeInternalError, err)
+	}
+	return post, nil
 }
 
 func (pu *PostUsecase) CheckAuthorsExistence(posts []*models.Post) *errors.Error {

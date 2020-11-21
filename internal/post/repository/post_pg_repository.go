@@ -87,6 +87,45 @@ func (pr *PostPgRepository) Insert(posts []*models.Post, threadID uint64) error 
 	return nil
 }
 
+func (pr *PostPgRepository) Update(post *models.Post) error {
+	tx, err := pr.dbConn.BeginTx(context.Background(), &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+
+	_, err = pr.dbConn.Exec(
+		`UPDATE posts
+		SET message = $2
+		WHERE id = $1;`,
+		post.ID, post.Message)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (pr *PostPgRepository) SelectByID(postID uint64) (*models.Post, error) {
+	post := &models.Post{}
+
+	row := pr.dbConn.QueryRow(
+		`SELECT id, parent, author, message, isedited, forum, thread, created
+		FROM posts
+		WHERE id=$1`,
+		postID)
+
+	err := row.Scan(&post.ID, &post.Parent, &post.Author, &post.Message, &post.IsEdited,
+		&post.Forum, &post.Thread, &post.Created)
+	if err != nil {
+		return nil, err
+	}
+	return post, nil
+}
+
 func (pr *PostPgRepository) SelectNotExistingParentPosts(posts []*models.Post) ([]uint64, error) {
 	/*
 		SELECT newp.parent FROM
