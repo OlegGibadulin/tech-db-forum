@@ -101,6 +101,24 @@ func (tr *ThreadPgRepository) SelectByID(threadID uint64) (*models.Thread, error
 	return thread, nil
 }
 
+func (tr *ThreadPgRepository) SelectByPostID(postID uint64) (*models.Thread, error) {
+	thread := &models.Thread{}
+
+	row := tr.dbConn.QueryRow(
+		`SELECT id, title, author, message, created, forum, votes, slug
+		FROM threads AS t
+		JOIN posts AS p ON p.thread=t.id
+		WHERE p.id=$1`,
+		postID)
+
+	err := row.Scan(&thread.ID, &thread.Title, &thread.Author, &thread.Message, &thread.Created,
+		&thread.Forum, &thread.Votes, &thread.Slug)
+	if err != nil {
+		return nil, err
+	}
+	return thread, nil
+}
+
 func (tr *ThreadPgRepository) SelectAllByForum(forumSlug string, since time.Time, pgnt *models.Pagination) ([]*models.Thread, error) {
 	var values []interface{}
 

@@ -13,5 +13,6 @@ type ThreadUsecase interface {
 	GetBySlug(threadSlug string) (*models.Thread, *errors.Error)
 	GetByID(threadID uint64) (*models.Thread, *errors.Error)
 	GetBySlugOrID(threadSlugOrID string) (*models.Thread, *errors.Error)
+	GetByPostID(postID uint64) (*models.Thread, *errors.Error)
 	ListByForum(forumSlug string, since time.Time, pgnt *models.Pagination) ([]*models.Thread, *errors.Error)
 }

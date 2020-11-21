@@ -3,8 +3,10 @@ package delivery
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/OlegGibadulin/tech-db-forum/internal/forum"
+	"github.com/OlegGibadulin/tech-db-forum/internal/helpers/errors"
 	"github.com/OlegGibadulin/tech-db-forum/internal/models"
 	"github.com/OlegGibadulin/tech-db-forum/internal/mwares"
 	"github.com/OlegGibadulin/tech-db-forum/internal/post"
@@ -33,6 +35,7 @@ func NewPostHandler(postUcase post.PostUsecase, userUcase user.UserUsecase,
 }
 
 func (ph *PostHandler) Configure(e *echo.Echo, mw *mwares.MiddlewareManager) {
+	e.GET("/api/post/:pid/details", ph.GetPostDetailesHandler())
 	e.POST("/api/post/:pid/details", ph.UpdatePostHandler())
 }
 
@@ -59,5 +62,48 @@ func (ph *PostHandler) UpdatePostHandler() echo.HandlerFunc {
 			return cntx.JSON(err.HTTPCode, err.Response())
 		}
 		return cntx.JSON(http.StatusOK, post)
+	}
+}
+
+func (ph *PostHandler) GetPostDetailesHandler() echo.HandlerFunc {
+	type Response struct {
+		Post   *models.Post   `json:"post"`
+		Author *models.User   `json:"author"`
+		Thread *models.Thread `json:"thread"`
+		Forum  *models.Forum  `json:"forum"`
+	}
+
+	return func(cntx echo.Context) error {
+		related := strings.Split(cntx.QueryParam("related"), ",")
+		postID, _ := strconv.ParseUint(cntx.Param("pid"), 10, 64)
+
+		res := &Response{}
+		var err *errors.Error
+
+		if res.Post, err = ph.postUcase.GetByID(postID); err != nil {
+			logrus.Error(err.Message)
+			return cntx.JSON(err.HTTPCode, err.Response())
+		}
+
+		for _, param := range related {
+			switch param {
+			case "user":
+				if res.Author, err = ph.userUcase.GetByPostID(postID); err != nil {
+					logrus.Error(err.Message)
+					return cntx.JSON(err.HTTPCode, err.Response())
+				}
+			case "forum":
+				if res.Forum, err = ph.forumUcase.GetByPostID(postID); err != nil {
+					logrus.Error(err.Message)
+					return cntx.JSON(err.HTTPCode, err.Response())
+				}
+			case "thread":
+				if res.Thread, err = ph.threadUcase.GetByPostID(postID); err != nil {
+					logrus.Error(err.Message)
+					return cntx.JSON(err.HTTPCode, err.Response())
+				}
+			}
+		}
+		return cntx.JSON(http.StatusOK, res)
 	}
 }

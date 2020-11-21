@@ -100,6 +100,17 @@ func (tu *ThreadUsecase) GetBySlugOrID(threadSlugOrID string) (*models.Thread, *
 	return thread, nil
 }
 
+func (tu *ThreadUsecase) GetByPostID(postID uint64) (*models.Thread, *errors.Error) {
+	thread, err := tu.threadRepo.SelectByPostID(postID)
+	switch {
+	case err == sql.ErrNoRows:
+		return nil, errors.BuildByMsg(CodeThreadDoesNotExist, "post id", strconv.Itoa(int(postID)))
+	case err != nil:
+		return nil, errors.New(CodeInternalError, err)
+	}
+	return thread, nil
+}
+
 func (tu *ThreadUsecase) ListByForum(forumSlug string, since time.Time, pgnt *models.Pagination) ([]*models.Thread, *errors.Error) {
 	threads, err := tu.threadRepo.SelectAllByForum(forumSlug, since, pgnt)
 	if err != nil {

@@ -57,3 +57,20 @@ func (fr *ForumPgRepository) SelectBySlug(slug string) (*models.Forum, error) {
 	}
 	return forum, nil
 }
+
+func (fr *ForumPgRepository) SelectByPostID(postID uint64) (*models.Forum, error) {
+	forum := &models.Forum{}
+
+	row := fr.dbConn.QueryRow(
+		`SELECT title, author, slug, posts, threads
+		FROM forums AS f
+		JOIN posts AS p ON p.forum=f.slug
+		WHERE p.id=$1`,
+		postID)
+
+	err := row.Scan(&forum.Title, &forum.User, &forum.Slug, &forum.Posts, &forum.Threads)
+	if err != nil {
+		return nil, err
+	}
+	return forum, nil
+}

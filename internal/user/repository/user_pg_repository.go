@@ -95,6 +95,23 @@ func (ur *UserPgRepository) SelectByEmail(email string) (*models.User, error) {
 	return user, nil
 }
 
+func (ur *UserPgRepository) SelectByPostID(postID uint64) (*models.User, error) {
+	user := &models.User{}
+
+	row := ur.dbConn.QueryRow(
+		`SELECT u.nickname, u.fullname, u.email, u.about
+		FROM users AS u
+		JOIN posts AS p ON p.author=u.nickname
+		WHERE p.id=$1`,
+		postID)
+
+	err := row.Scan(&user.Nickname, &user.Fullname, &user.Email, &user.About)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
 func (ur *UserPgRepository) SelectAllByNicknameOrEmail(nickname string, email string) ([]*models.User, error) {
 	rows, err := ur.dbConn.Query(
 		`SELECT nickname, fullname, email, about
