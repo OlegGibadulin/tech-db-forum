@@ -6,8 +6,9 @@ import (
 )
 
 type PostUsecase interface {
-	Create(posts []*models.Post, threadID uint64) *errors.Error
+	Create(posts []*models.Post, thread *models.Thread) *errors.Error
 	Update(postID uint64, postData *models.Post) (*models.Post, *errors.Error)
 	GetByID(postID uint64) (*models.Post, *errors.Error)
 	CheckAuthorsExistence(posts []*models.Post) *errors.Error
+	ListByThread(threadID uint64, since uint64, pgnt *models.Pagination) ([]*models.Post, *errors.Error)
 }

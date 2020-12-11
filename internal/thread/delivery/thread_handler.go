@@ -33,6 +33,7 @@ func (th *ThreadHandler) Configure(e *echo.Echo, mw *mwares.MiddlewareManager) {
 	e.POST("/api/thread/:slug_or_id/details", th.UpdateThreadHandler())
 	e.POST("/api/thread/:slug_or_id/vote", th.VoteThreadHandler())
 	e.POST("/api/thread/:slug_or_id/create", th.CreatePostsHandler())
+	e.GET("/api/thread/:slug_or_id/posts", th.GetPostsByThreadHandler())
 }
 
 func (th *ThreadHandler) UpdateThreadHandler() echo.HandlerFunc {
@@ -117,5 +118,34 @@ func (th *ThreadHandler) CreatePostsHandler() echo.HandlerFunc {
 			return cntx.JSON(err.HTTPCode, err.Response())
 		}
 		return cntx.JSON(http.StatusCreated, posts)
+	}
+}
+
+func (th *ThreadHandler) GetPostsByThreadHandler() echo.HandlerFunc {
+	type Request struct {
+		Since uint64 `query:"since"`
+		models.Pagination
+	}
+
+	return func(cntx echo.Context) error {
+		req := &Request{}
+		if err := reader.NewRequestReader(cntx).Read(req); err != nil {
+			logrus.Error(err.Message)
+			return cntx.JSON(err.HTTPCode, err.Response())
+		}
+
+		slugOrID := cntx.Param("slug_or_id")
+		threadID, err := th.threadUcase.CheckThreadExistence(slugOrID)
+		if err != nil {
+			logrus.Error(err.Message)
+			return cntx.JSON(err.HTTPCode, err.Response())
+		}
+
+		posts, err := th.postUcase.ListByThread(threadID, req.Since, &req.Pagination)
+		if err != nil {
+			logrus.Error(err.Message)
+			return cntx.JSON(err.HTTPCode, err.Response())
+		}
+		return cntx.JSON(http.StatusOK, posts)
 	}
 }

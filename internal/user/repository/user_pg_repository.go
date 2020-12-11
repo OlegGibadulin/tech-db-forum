@@ -47,10 +47,10 @@ func (ur *UserPgRepository) Update(user *models.User) error {
 		return err
 	}
 
-	_, err = ur.dbConn.Exec(
+	_, err = tx.Exec(
 		`UPDATE users
 		SET fullname = $2, email = $3, about = $4
-		WHERE nickname = $1;`,
+		WHERE nickname = $1`,
 		user.Nickname, user.Fullname, user.Email, user.About)
 	if err != nil {
 		tx.Rollback()

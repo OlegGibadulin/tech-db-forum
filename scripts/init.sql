@@ -46,7 +46,8 @@ CREATE TABLE IF NOT EXISTS posts (
     isedited boolean DEFAULT FALSE,
     forum citext NOT NULL REFERENCES forums(slug) ON DELETE CASCADE,
     thread integer NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
-    created timestamp with time zone NOT NULL DEFAULT now()
+    created timestamp with time zone NOT NULL DEFAULT now(),
+    path INTEGER[] NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS votes (
@@ -63,6 +64,7 @@ DROP TRIGGER IF EXISTS inc_posts ON posts;
 DROP TRIGGER IF EXISTS upd_isEdited ON posts;
 DROP TRIGGER IF EXISTS upd_votes_on_insert ON votes;
 DROP TRIGGER IF EXISTS upd_votes_on_update ON votes;
+DROP TRIGGER IF EXISTS upd_path ON posts;
 
 
 -- Increment threads number in forums
@@ -162,3 +164,30 @@ LANGUAGE plpgsql;
 CREATE TRIGGER upd_votes_on_update AFTER UPDATE ON votes
     FOR EACH ROW EXECUTE PROCEDURE upd_votes_on_update();
 
+
+-- Insert id into path on insert
+CREATE OR REPLACE FUNCTION upd_path() RETURNS trigger AS
+$upd_path$
+    DECLARE
+        parent_thread integer;
+        parent_path integer[];
+    BEGIN
+        IF (NEW.parent = 0) THEN
+            NEW.path := array_append(NEW.path, NEW.id);
+            RETURN NEW;
+        END IF;
+        
+        SELECT thread INTO parent_thread FROM posts WHERE id=NEW.parent;
+        IF NOT FOUND OR NEW.thread <> parent_thread THEN
+            RAISE EXCEPTION 'Can not find parent post into thread' USING ERRCODE='00409';
+        END IF;
+
+        SELECT path INTO parent_path FROM posts WHERE id=NEW.parent;
+        NEW.path = array_append(parent_path, NEW.id);
+        RETURN NEW;
+    END;
+$upd_path$
+LANGUAGE plpgsql;
+
+CREATE TRIGGER upd_path BEFORE INSERT ON posts
+    FOR EACH ROW EXECUTE PROCEDURE upd_path();
