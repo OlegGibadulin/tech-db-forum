@@ -31,6 +31,7 @@ func NewThreadHandler(threadUcase thread.ThreadUsecase, userUcase user.UserUseca
 func (th *ThreadHandler) Configure(e *echo.Echo, mw *mwares.MiddlewareManager) {
 	e.GET("/api/thread/:slug_or_id/details", th.GetThreadDetailesHandler())
 	e.POST("/api/thread/:slug_or_id/details", th.UpdateThreadHandler())
+	e.POST("/api/thread/:slug_or_id/vote", th.VoteThreadHandler())
 	e.POST("/api/thread/:slug_or_id/create", th.CreatePostsHandler())
 }
 
@@ -66,6 +67,28 @@ func (th *ThreadHandler) GetThreadDetailesHandler() echo.HandlerFunc {
 	return func(cntx echo.Context) error {
 		slugOrID := cntx.Param("slug_or_id")
 		thread, err := th.threadUcase.GetBySlugOrID(slugOrID)
+		if err != nil {
+			logrus.Error(err.Message)
+			return cntx.JSON(err.HTTPCode, err.Response())
+		}
+		return cntx.JSON(http.StatusOK, thread)
+	}
+}
+
+func (th *ThreadHandler) VoteThreadHandler() echo.HandlerFunc {
+	type Request struct {
+		models.Vote
+	}
+
+	return func(cntx echo.Context) error {
+		req := &Request{}
+		if err := reader.NewRequestReader(cntx).Read(req); err != nil {
+			logrus.Error(err.Message)
+			return cntx.JSON(err.HTTPCode, err.Response())
+		}
+
+		slugOrID := cntx.Param("slug_or_id")
+		thread, err := th.threadUcase.Vote(slugOrID, &req.Vote)
 		if err != nil {
 			logrus.Error(err.Message)
 			return cntx.JSON(err.HTTPCode, err.Response())

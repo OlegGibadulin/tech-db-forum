@@ -111,6 +111,46 @@ func (tu *ThreadUsecase) GetByPostID(postID uint64) (*models.Thread, *errors.Err
 	return thread, nil
 }
 
+func (tu *ThreadUsecase) CheckThreadExistence(threadSlugOrID string) (uint64, *errors.Error) {
+	var threadID uint64
+	var err error
+
+	threadID, err = strconv.ParseUint(threadSlugOrID, 10, 64)
+	threadSlug := threadSlugOrID
+	if err != nil {
+		threadID, err = tu.threadRepo.SelectIDBySlug(threadSlug)
+		if err == sql.ErrNoRows {
+			return 0, errors.BuildByMsg(CodeThreadDoesNotExist, "slug", threadSlug)
+		}
+	} else {
+		_, err = tu.threadRepo.SelectIDByID(threadID)
+		if err == sql.ErrNoRows {
+			return 0, errors.BuildByMsg(CodeThreadDoesNotExist, "id", strconv.Itoa(int(threadID)))
+		}
+	}
+	if err != nil {
+		return 0, errors.New(CodeInternalError, err)
+	}
+	return threadID, nil
+}
+
+func (tu *ThreadUsecase) Vote(threadSlugOrID string, vote *models.Vote) (*models.Thread, *errors.Error) {
+	threadID, customErr := tu.CheckThreadExistence(threadSlugOrID)
+	if customErr != nil {
+		return nil, customErr
+	}
+
+	if err := tu.threadRepo.VoteByID(threadID, vote); err != nil {
+		return nil, errors.New(CodeInternalError, err)
+	}
+
+	thread, customErr := tu.GetByID(threadID)
+	if customErr != nil {
+		return nil, customErr
+	}
+	return thread, nil
+}
+
 func (tu *ThreadUsecase) ListByForum(forumSlug string, since time.Time, pgnt *models.Pagination) ([]*models.Thread, *errors.Error) {
 	threads, err := tu.threadRepo.SelectAllByForum(forumSlug, since, pgnt)
 	if err != nil {

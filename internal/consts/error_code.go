@@ -15,3 +15,5 @@ const (
 	CodeParentPostDoesNotExist
 	CodePostDoesNotExist
 )
+
+const OnPostInsertExceptionMsg = "pq: Can not find parent post into thread"

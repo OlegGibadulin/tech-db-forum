@@ -51,10 +51,10 @@ func (tr *ThreadPgRepository) Update(thread *models.Thread) error {
 		return err
 	}
 
-	_, err = tr.dbConn.Exec(
+	_, err = tx.Exec(
 		`UPDATE threads
 		SET title = $2, message = $3
-		WHERE id = $1;`,
+		WHERE id = $1`,
 		thread.ID, thread.Title, thread.Message)
 	if err != nil {
 		tx.Rollback()
@@ -65,6 +65,60 @@ func (tr *ThreadPgRepository) Update(thread *models.Thread) error {
 		return err
 	}
 	return nil
+}
+
+func (tr *ThreadPgRepository) VoteByID(threadID uint64, vote *models.Vote) error {
+	tx, err := tr.dbConn.BeginTx(context.Background(), &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(
+		`INSERT INTO votes(nickname, thread, voice)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (nickname, thread) DO UPDATE SET voice = $3`,
+		vote.Nickname, threadID, vote.Voice)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (tr *ThreadPgRepository) SelectIDByID(threadID uint64) (uint64, error) {
+	var checkedThreadID uint64
+
+	row := tr.dbConn.QueryRow(
+		`SELECT id
+		FROM threads
+		WHERE id=$1`,
+		threadID)
+
+	err := row.Scan(&checkedThreadID)
+	if err != nil {
+		return 0, err
+	}
+	return checkedThreadID, nil
+}
+
+func (tr *ThreadPgRepository) SelectIDBySlug(slug string) (uint64, error) {
+	var threadID uint64
+
+	row := tr.dbConn.QueryRow(
+		`SELECT id
+		FROM threads
+		WHERE slug=$1`,
+		slug)
+
+	err := row.Scan(&threadID)
+	if err != nil {
+		return 0, err
+	}
+	return threadID, nil
 }
 
 func (tr *ThreadPgRepository) SelectBySlug(slug string) (*models.Thread, error) {
