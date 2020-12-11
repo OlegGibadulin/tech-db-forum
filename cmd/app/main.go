@@ -21,6 +21,14 @@ import (
 	forumHandler "github.com/OlegGibadulin/tech-db-forum/internal/forum/delivery"
 	forumRepo "github.com/OlegGibadulin/tech-db-forum/internal/forum/repository"
 	forumUsecase "github.com/OlegGibadulin/tech-db-forum/internal/forum/usecases"
+
+	postHandler "github.com/OlegGibadulin/tech-db-forum/internal/post/delivery"
+	postRepo "github.com/OlegGibadulin/tech-db-forum/internal/post/repository"
+	postUsecase "github.com/OlegGibadulin/tech-db-forum/internal/post/usecases"
+
+	serviceHandler "github.com/OlegGibadulin/tech-db-forum/internal/service/delivery"
+	serviceRepo "github.com/OlegGibadulin/tech-db-forum/internal/service/repository"
+	serviceUsecase "github.com/OlegGibadulin/tech-db-forum/internal/service/usecases"
 )
 
 func main() {
@@ -44,11 +52,15 @@ func main() {
 	userRepo := userRepo.NewUserPgRepository(dbConnection)
 	threadRepo := threadRepo.NewThreadPgRepository(dbConnection)
 	forumRepo := forumRepo.NewForumPgRepository(dbConnection)
+	postRepo := postRepo.NewPostPgRepository(dbConnection)
+	serviceRepo := serviceRepo.NewServicePgRepository(dbConnection)
 
 	// Usecases
 	userUcase := userUsecase.NewUserUsecase(userRepo)
 	threadUcase := threadUsecase.NewThreadUsecase(threadRepo)
 	forumUcase := forumUsecase.NewForumUsecase(forumRepo)
+	postUcase := postUsecase.NewPostUsecase(postRepo)
+	serviceUcase := serviceUsecase.NewServiceUsecase(serviceRepo)
 
 	// Middleware
 	e := echo.New()
@@ -57,12 +69,16 @@ func main() {
 
 	// Delivery
 	userHandler := userHandler.NewUserHandler(userUcase)
-	threadHandler := threadHandler.NewThreadHandler(threadUcase, userUcase)
+	threadHandler := threadHandler.NewThreadHandler(threadUcase, userUcase, postUcase)
 	forumHandler := forumHandler.NewForumHandler(forumUcase, userUcase, threadUcase)
+	postHandler := postHandler.NewPostHandler(postUcase, userUcase, threadUcase, forumUcase)
+	serviceHandler := serviceHandler.NewServiceHandler(serviceUcase)
 
 	userHandler.Configure(e, mw)
 	threadHandler.Configure(e, mw)
 	forumHandler.Configure(e, mw)
+	postHandler.Configure(e, mw)
+	serviceHandler.Configure(e, mw)
 
 	log.Fatal(e.Start(config.GetServerConnString()))
 }

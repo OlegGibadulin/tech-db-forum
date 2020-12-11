@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"database/sql"
+	"strconv"
 
 	. "github.com/OlegGibadulin/tech-db-forum/internal/consts"
 	"github.com/OlegGibadulin/tech-db-forum/internal/forum"
@@ -39,6 +40,17 @@ func (fu *ForumUsecase) GetBySlug(slug string) (*models.Forum, *errors.Error) {
 	switch {
 	case err == sql.ErrNoRows:
 		return nil, errors.BuildByMsg(CodeForumDoesNotExist, "slug", slug)
+	case err != nil:
+		return nil, errors.New(CodeInternalError, err)
+	}
+	return forum, nil
+}
+
+func (fu *ForumUsecase) GetByPostID(postID uint64) (*models.Forum, *errors.Error) {
+	forum, err := fu.forumRepo.SelectByPostID(postID)
+	switch {
+	case err == sql.ErrNoRows:
+		return nil, errors.BuildByMsg(CodeForumDoesNotExist, "post id", strconv.Itoa(int(postID)))
 	case err != nil:
 		return nil, errors.New(CodeInternalError, err)
 	}

@@ -1,10 +1,7 @@
 CREATE EXTENSION IF NOT EXISTS citext;
 
-DROP TRIGGER IF EXISTS inc_threads on threads;
-DROP TRIGGER IF EXISTS insert_author on threads;
-
 DROP TABLE IF EXISTS
-    users, forums, forum_user, threads
+    users, forums, forum_user, threads, posts, votes
     CASCADE;
 
 
@@ -16,22 +13,19 @@ CREATE TABLE IF NOT EXISTS users (
     PRIMARY KEY(nickname, email)
 );
 
-
 CREATE TABLE IF NOT EXISTS forums (
     title varchar(64) NOT NULL,
-    author citext NOT NULL REFERENCES users(nickname) ON DELETE CASCADE,
+    author citext NOT NULL REFERENCES users(nickname) ON DELETE CASCADE, -- ins_author
     slug citext UNIQUE NOT NULL PRIMARY KEY,
-    posts integer NOT NULL DEFAULT 0 CONSTRAINT positive_posts CHECK (posts >= 0),
-    threads integer NOT NULL DEFAULT 0 CONSTRAINT positive_threads CHECK (threads >= 0)
+    posts integer NOT NULL DEFAULT 0 CONSTRAINT positive_posts CHECK (posts >= 0), -- inc_posts
+    threads integer NOT NULL DEFAULT 0 CONSTRAINT positive_threads CHECK (threads >= 0) -- inc_threads
 );
-
 
 CREATE TABLE IF NOT EXISTS forum_user (
     nickname citext NOT NULL REFERENCES users(nickname) ON DELETE CASCADE,
     forum citext NOT NULL REFERENCES forums(slug) ON DELETE CASCADE,
     UNIQUE(nickname, forum)
 );
-
 
 CREATE TABLE IF NOT EXISTS threads (
     id serial PRIMARY KEY,
@@ -40,9 +34,37 @@ CREATE TABLE IF NOT EXISTS threads (
     message varchar NOT NULL,
     created timestamp with time zone NOT NULL DEFAULT now(),
     forum citext NOT NULL REFERENCES forums(slug) ON DELETE CASCADE,
-    votes integer NOT NULL DEFAULT 0 CONSTRAINT positive_threads CHECK (votes >= 0),
+    votes integer NOT NULL DEFAULT 0,
     slug citext NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS posts (
+    id serial PRIMARY KEY,
+    parent integer NOT NULL,
+    author citext NOT NULL REFERENCES users(nickname) ON DELETE CASCADE,
+    message varchar NOT NULL,
+    isedited boolean DEFAULT FALSE,
+    forum citext NOT NULL REFERENCES forums(slug) ON DELETE CASCADE,
+    thread integer NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
+    created timestamp with time zone NOT NULL DEFAULT now(),
+    path INTEGER[] NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS votes (
+    nickname citext NOT NULL REFERENCES users(nickname) ON DELETE CASCADE,
+    thread integer NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
+    voice integer NOT NULL,
+    UNIQUE(nickname, thread)
+);
+
+
+DROP TRIGGER IF EXISTS inc_threads ON threads;
+DROP TRIGGER IF EXISTS ins_author ON threads;
+DROP TRIGGER IF EXISTS inc_posts ON posts;
+DROP TRIGGER IF EXISTS upd_isEdited ON posts;
+DROP TRIGGER IF EXISTS upd_votes_on_insert ON votes;
+DROP TRIGGER IF EXISTS upd_votes_on_update ON votes;
+DROP TRIGGER IF EXISTS upd_path ON posts;
 
 
 -- Increment threads number in forums
@@ -62,16 +84,110 @@ CREATE TRIGGER inc_threads AFTER INSERT ON threads
 
 
 -- Insert user into forum_user
-CREATE OR REPLACE FUNCTION insert_author() RETURNS trigger AS
-$insert_autor$
+CREATE OR REPLACE FUNCTION ins_author() RETURNS trigger AS
+$ins_author$
     BEGIN
         INSERT INTO forum_user(nickname, forum)
         VALUES(NEW.author, NEW.forum)
         ON CONFLICT DO NOTHING;
         RETURN NEW;
     END;
-$insert_autor$
+$ins_author$
 LANGUAGE plpgsql;
 
-CREATE TRIGGER insert_autor AFTER INSERT ON threads
-    FOR EACH ROW EXECUTE PROCEDURE insert_author();
+CREATE TRIGGER ins_author AFTER INSERT ON threads
+    FOR EACH ROW EXECUTE PROCEDURE ins_author();
+
+
+-- Increment threads number in forums
+CREATE OR REPLACE FUNCTION inc_posts() RETURNS trigger AS
+$inc_posts$
+    BEGIN
+        UPDATE forums
+        SET posts = posts + 1
+        WHERE slug=NEW.forum;
+        RETURN NEW;
+    END;
+$inc_posts$
+LANGUAGE plpgsql;
+
+CREATE TRIGGER inc_posts AFTER INSERT ON posts
+    FOR EACH ROW EXECUTE PROCEDURE inc_posts();
+
+
+-- Set isEdited true if message was updated
+CREATE OR REPLACE FUNCTION upd_isEdited() RETURNS trigger AS
+$upd_isEdited$
+    BEGIN
+        IF NEW.message <> OLD.message THEN
+            NEW.isEdited = TRUE;
+        END IF;
+        RETURN NEW;
+    END;
+$upd_isEdited$
+LANGUAGE plpgsql;
+
+CREATE TRIGGER upd_isEdited AFTER UPDATE ON posts
+    FOR EACH ROW EXECUTE PROCEDURE upd_isEdited();
+
+
+-- Update sum of thread votes on insert
+CREATE OR REPLACE FUNCTION upd_votes_on_insert() RETURNS trigger AS
+$upd_votes_on_insert$
+    BEGIN
+        UPDATE threads
+        SET votes = votes + NEW.voice
+        WHERE id=NEW.thread;
+        RETURN NEW;
+    END;
+$upd_votes_on_insert$
+LANGUAGE plpgsql;
+
+CREATE TRIGGER upd_votes_on_insert AFTER INSERT ON votes
+    FOR EACH ROW EXECUTE PROCEDURE upd_votes_on_insert();
+
+
+-- Update sum of thread votes on update
+CREATE OR REPLACE FUNCTION upd_votes_on_update() RETURNS trigger AS
+$upd_votes_on_update$
+    BEGIN
+        IF NEW.voice <> OLD.voice THEN
+            UPDATE threads
+            SET votes = votes - OLD.voice + NEW.voice
+            WHERE id=NEW.thread;
+        END IF;
+        RETURN NEW;
+    END;
+$upd_votes_on_update$
+LANGUAGE plpgsql;
+
+CREATE TRIGGER upd_votes_on_update AFTER UPDATE ON votes
+    FOR EACH ROW EXECUTE PROCEDURE upd_votes_on_update();
+
+
+-- Insert id into path on insert
+CREATE OR REPLACE FUNCTION upd_path() RETURNS trigger AS
+$upd_path$
+    DECLARE
+        parent_thread integer;
+        parent_path integer[];
+    BEGIN
+        IF (NEW.parent = 0) THEN
+            NEW.path := array_append(NEW.path, NEW.id);
+            RETURN NEW;
+        END IF;
+        
+        SELECT thread INTO parent_thread FROM posts WHERE id=NEW.parent;
+        IF NOT FOUND OR NEW.thread <> parent_thread THEN
+            RAISE EXCEPTION 'Can not find parent post into thread' USING ERRCODE='00409';
+        END IF;
+
+        SELECT path INTO parent_path FROM posts WHERE id=NEW.parent;
+        NEW.path = array_append(parent_path, NEW.id);
+        RETURN NEW;
+    END;
+$upd_path$
+LANGUAGE plpgsql;
+
+CREATE TRIGGER upd_path BEFORE INSERT ON posts
+    FOR EACH ROW EXECUTE PROCEDURE upd_path();

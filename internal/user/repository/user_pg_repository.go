@@ -47,10 +47,10 @@ func (ur *UserPgRepository) Update(user *models.User) error {
 		return err
 	}
 
-	_, err = ur.dbConn.Exec(
+	_, err = tx.Exec(
 		`UPDATE users
 		SET fullname = $2, email = $3, about = $4
-		WHERE nickname = $1;`,
+		WHERE nickname = $1`,
 		user.Nickname, user.Fullname, user.Email, user.About)
 	if err != nil {
 		tx.Rollback()
@@ -87,6 +87,23 @@ func (ur *UserPgRepository) SelectByEmail(email string) (*models.User, error) {
 		FROM users
 		WHERE email=$1`,
 		email)
+
+	err := row.Scan(&user.Nickname, &user.Fullname, &user.Email, &user.About)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (ur *UserPgRepository) SelectByPostID(postID uint64) (*models.User, error) {
+	user := &models.User{}
+
+	row := ur.dbConn.QueryRow(
+		`SELECT u.nickname, u.fullname, u.email, u.about
+		FROM users AS u
+		JOIN posts AS p ON p.author=u.nickname
+		WHERE p.id=$1`,
+		postID)
 
 	err := row.Scan(&user.Nickname, &user.Fullname, &user.Email, &user.About)
 	if err != nil {

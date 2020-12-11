@@ -70,7 +70,7 @@ func (e *Error) Response() BodyType {
 var Errors = map[ErrorCode]*Error{
 	CodeBadRequest: {
 		Code:     CodeBadRequest,
-		HTTPCode: http.StatusBadRequest,
+		HTTPCode: http.StatusNotFound,
 		Message:  "Wrong request data",
 	},
 	CodeInternalError: {
@@ -84,7 +84,7 @@ var Errors = map[ErrorCode]*Error{
 	},
 	CodeUserDoesNotExist: {
 		Code:     CodeUserDoesNotExist,
-		HTTPCode: http.StatusBadRequest,
+		HTTPCode: http.StatusNotFound,
 		Message:  "Can't find user with %s %s",
 	},
 	CodeEmailAlreadyExists: {
@@ -98,7 +98,7 @@ var Errors = map[ErrorCode]*Error{
 	},
 	CodeForumDoesNotExist: {
 		Code:     CodeForumDoesNotExist,
-		HTTPCode: http.StatusBadRequest,
+		HTTPCode: http.StatusNotFound,
 		Message:  "Can't find forum with %s %s",
 	},
 	CodeThreadAlreadyExists: {
@@ -107,7 +107,17 @@ var Errors = map[ErrorCode]*Error{
 	},
 	CodeThreadDoesNotExist: {
 		Code:     CodeThreadDoesNotExist,
-		HTTPCode: http.StatusBadRequest,
+		HTTPCode: http.StatusNotFound,
 		Message:  "Can't find thread with %s %s",
+	},
+	CodeParentPostDoesNotExist: {
+		Code:     CodeParentPostDoesNotExist,
+		HTTPCode: http.StatusConflict,
+		Message:  "Can't find parent post in thread with %s %d",
+	},
+	CodePostDoesNotExist: {
+		Code:     CodePostDoesNotExist,
+		HTTPCode: http.StatusNotFound,
+		Message:  "Can't find post with %s %s",
 	},
 }

@@ -1,8 +1,12 @@
 package request_reader
 
 import (
+	"encoding/json"
+	"io/ioutil"
+
 	. "github.com/OlegGibadulin/tech-db-forum/internal/consts"
 	"github.com/OlegGibadulin/tech-db-forum/internal/helpers/errors"
+	"github.com/OlegGibadulin/tech-db-forum/internal/models"
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 )
@@ -28,4 +32,17 @@ func (rr *RequestReader) Read(request interface{}) *errors.Error {
 		return errors.New(CodeBadRequest, err)
 	}
 	return nil
+}
+
+func (rr *RequestReader) ReadPosts() ([]*models.Post, *errors.Error) {
+	b, err := ioutil.ReadAll(rr.cntx.Request().Body)
+	if err != nil || b == nil {
+		return nil, errors.New(CodeBadRequest, err)
+	}
+
+	posts := []*models.Post{}
+	if err := json.Unmarshal(b, &posts); err != nil {
+		return nil, errors.New(CodeBadRequest, err)
+	}
+	return posts, nil
 }

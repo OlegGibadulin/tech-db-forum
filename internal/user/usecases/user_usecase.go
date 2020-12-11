@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"database/sql"
+	"strconv"
 
 	. "github.com/OlegGibadulin/tech-db-forum/internal/consts"
 	"github.com/OlegGibadulin/tech-db-forum/internal/helpers/errors"
@@ -80,6 +81,17 @@ func (uu *UserUsecase) GetByEmail(email string) (*models.User, *errors.Error) {
 	switch {
 	case err == sql.ErrNoRows:
 		return nil, errors.BuildByMsg(CodeUserDoesNotExist, "email", email)
+	case err != nil:
+		return nil, errors.New(CodeInternalError, err)
+	}
+	return user, nil
+}
+
+func (uu *UserUsecase) GetByPostID(postID uint64) (*models.User, *errors.Error) {
+	user, err := uu.userRepo.SelectByPostID(postID)
+	switch {
+	case err == sql.ErrNoRows:
+		return nil, errors.BuildByMsg(CodeUserDoesNotExist, "post id", strconv.Itoa(int(postID)))
 	case err != nil:
 		return nil, errors.New(CodeInternalError, err)
 	}
