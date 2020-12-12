@@ -50,8 +50,8 @@ func (uh *UserHandler) CreateUserHandler() echo.HandlerFunc {
 func (uh *UserHandler) UpdateUserHandler() echo.HandlerFunc {
 	type Request struct {
 		Fullname string `json:"fullname" validate:"omitempty,gte=3,lte=32"`
-		Email    string `json:"email" validate:"omitempty,email,lte=32"`
-		About    string `json:"about" validate:"lte=256"`
+		Email    string `json:"email" validate:"omitempty,email,lte=64"`
+		About    string `json:"about"`
 	}
 
 	return func(cntx echo.Context) error {

@@ -159,7 +159,7 @@ func (tr *ThreadPgRepository) SelectByPostID(postID uint64) (*models.Thread, err
 	thread := &models.Thread{}
 
 	row := tr.dbConn.QueryRow(
-		`SELECT id, title, author, message, created, forum, votes, slug
+		`SELECT t.id, t.title, t.author, t.message, t.created, t.forum, t.votes, t.slug
 		FROM threads AS t
 		JOIN posts AS p ON p.thread=t.id
 		WHERE p.id=$1`,
@@ -198,7 +198,11 @@ func (tr *ThreadPgRepository) SelectAllByForum(forumSlug string, since time.Time
 	var filterQuery string
 	if !since.IsZero() {
 		ind := len(values) + 1
-		filterQuery = "AND created >= $" + strconv.Itoa(ind)
+		if pgnt.Desc {
+			filterQuery = "AND created <= $" + strconv.Itoa(ind)
+		} else {
+			filterQuery = "AND created >= $" + strconv.Itoa(ind)
+		}
 		values = append(values, since)
 	}
 

@@ -21,9 +21,12 @@ func NewPostUsecase(repo post.PostRepository) post.PostUsecase {
 }
 
 func (pu *PostUsecase) Create(posts []*models.Post, thread *models.Thread) *errors.Error {
+	if len(posts) == 0 {
+		return nil
+	}
 	err := pu.postRepo.Insert(posts, thread)
 	if err != nil {
-		if err.Error() == OnPostInsertExceptionMsg {
+		if err.Error() == OnPostInsertExceptionMsgConflict {
 			return errors.BuildByMsg(CodeParentPostDoesNotExist, "id", thread.ID)
 		}
 		return errors.New(CodeInternalError, err)
@@ -37,8 +40,9 @@ func (pu *PostUsecase) Update(postID uint64, postData *models.Post) (*models.Pos
 		return nil, customErr
 	}
 
-	if postData.Message != "" {
+	if postData.Message != "" && postData.Message != post.Message {
 		post.Message = postData.Message
+		post.IsEdited = true
 	}
 
 	if err := pu.postRepo.Update(post); err != nil {
@@ -58,29 +62,17 @@ func (pu *PostUsecase) GetByID(postID uint64) (*models.Post, *errors.Error) {
 	return post, nil
 }
 
-func (pu *PostUsecase) CheckAuthorsExistence(posts []*models.Post) *errors.Error {
-	postsID, err := pu.postRepo.SelectNotExistingParentPosts(posts)
-	if err != nil {
-		return errors.New(CodeInternalError, err)
-	}
-	if len(postsID) != 0 {
-		postID := strconv.Itoa(int(postsID[0]))
-		return errors.BuildByMsg(CodeParentPostDoesNotExist, "id", postID)
-	}
-	return nil
-}
-
 func (pu *PostUsecase) ListByThread(threadID uint64, since uint64, pgnt *models.Pagination) ([]*models.Post, *errors.Error) {
 	var posts []*models.Post
 	var err error
 
 	switch pgnt.Sort {
-	case "flat":
-		posts, err = pu.postRepo.SelectAllByThreadFlat(threadID, since, pgnt)
-	case "tree":
+	case models.Tree:
 		posts, err = pu.postRepo.SelectAllByThreadTree(threadID, since, pgnt)
-	case "parent_tree":
+	case models.ParentTree:
 		posts, err = pu.postRepo.SelectAllByThreadParentTree(threadID, since, pgnt)
+	default:
+		posts, err = pu.postRepo.SelectAllByThreadFlat(threadID, since, pgnt)
 	}
 	if err != nil {
 		return nil, errors.New(CodeInternalError, err)

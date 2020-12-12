@@ -8,6 +8,7 @@ import (
 	"github.com/OlegGibadulin/tech-db-forum/internal/post"
 	"github.com/OlegGibadulin/tech-db-forum/internal/thread"
 	"github.com/OlegGibadulin/tech-db-forum/internal/user"
+	"github.com/OlegGibadulin/tech-db-forum/pkg/uniq"
 	reader "github.com/OlegGibadulin/tech-db-forum/tools/request_reader"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
@@ -38,8 +39,8 @@ func (th *ThreadHandler) Configure(e *echo.Echo, mw *mwares.MiddlewareManager) {
 
 func (th *ThreadHandler) UpdateThreadHandler() echo.HandlerFunc {
 	type Request struct {
-		Title   string `json:"title" validate:"omitempty,gte=3,lte=64"`
-		Message string `json:"message" validate:"omitempty,gt=0"`
+		Title   string `json:"title"`
+		Message string `json:"message"`
 	}
 
 	return func(cntx echo.Context) error {
@@ -88,6 +89,11 @@ func (th *ThreadHandler) VoteThreadHandler() echo.HandlerFunc {
 			return cntx.JSON(err.HTTPCode, err.Response())
 		}
 
+		if _, err := th.userUcase.GetByNickname(req.Nickname); err != nil {
+			logrus.Error(err.Message)
+			return cntx.JSON(err.HTTPCode, err.Response())
+		}
+
 		slugOrID := cntx.Param("slug_or_id")
 		thread, err := th.threadUcase.Vote(slugOrID, &req.Vote)
 		if err != nil {
@@ -109,6 +115,16 @@ func (th *ThreadHandler) CreatePostsHandler() echo.HandlerFunc {
 		slugOrID := cntx.Param("slug_or_id")
 		thread, err := th.threadUcase.GetBySlugOrID(slugOrID)
 		if err != nil {
+			logrus.Error(err.Message)
+			return cntx.JSON(err.HTTPCode, err.Response())
+		}
+
+		var nicknames []string
+		for _, post := range posts {
+			nicknames = append(nicknames, post.Author)
+		}
+		nicknames = uniq.RemoveDuplicates(nicknames)
+		if err := th.userUcase.CheckUsersExistence(nicknames); err != nil {
 			logrus.Error(err.Message)
 			return cntx.JSON(err.HTTPCode, err.Response())
 		}

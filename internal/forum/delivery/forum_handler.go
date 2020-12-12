@@ -49,10 +49,12 @@ func (fh *ForumHandler) CreateForumHandler() echo.HandlerFunc {
 			return cntx.JSON(err.HTTPCode, err.Response())
 		}
 
-		if _, err := fh.userUcase.GetByNickname(req.User); err != nil {
+		user, err := fh.userUcase.GetByNickname(req.User)
+		if err != nil {
 			logrus.Error(err.Message)
 			return cntx.JSON(err.HTTPCode, err.Response())
 		}
+		req.User = user.Nickname
 
 		if err := fh.forumUcase.Create(&req.Forum); err != nil {
 			logrus.Error(err.Message)
@@ -86,15 +88,19 @@ func (fh *ForumHandler) CreateThreadHandler() echo.HandlerFunc {
 			return cntx.JSON(err.HTTPCode, err.Response())
 		}
 
-		if _, err := fh.forumUcase.GetBySlug(req.Forum); err != nil {
+		forum, err := fh.forumUcase.GetBySlug(req.Forum)
+		if err != nil {
 			logrus.Error(err.Message)
 			return cntx.JSON(err.HTTPCode, err.Response())
 		}
+		req.Forum = forum.Slug
 
-		if _, err := fh.userUcase.GetByNickname(req.Author); err != nil {
+		user, err := fh.userUcase.GetByNickname(req.Author)
+		if err != nil {
 			logrus.Error(err.Message)
 			return cntx.JSON(err.HTTPCode, err.Response())
 		}
+		req.Author = user.Nickname
 
 		if err := fh.threadUcase.Create(&req.Thread); err != nil {
 			logrus.Error(err.Message)
@@ -106,7 +112,6 @@ func (fh *ForumHandler) CreateThreadHandler() echo.HandlerFunc {
 
 func (fh *ForumHandler) GetThreadsByForumHandler() echo.HandlerFunc {
 	type Request struct {
-		Slug  string    `json:"slug" validate:"required,gte=3,lte=64"`
 		Since time.Time `query:"since"`
 		models.Pagination
 	}
@@ -118,7 +123,13 @@ func (fh *ForumHandler) GetThreadsByForumHandler() echo.HandlerFunc {
 			return cntx.JSON(err.HTTPCode, err.Response())
 		}
 
-		threads, err := fh.threadUcase.ListByForum(req.Slug, req.Since, &req.Pagination)
+		slug := cntx.Param("slug")
+		if _, err := fh.forumUcase.GetBySlug(slug); err != nil {
+			logrus.Error(err.Message)
+			return cntx.JSON(err.HTTPCode, err.Response())
+		}
+
+		threads, err := fh.threadUcase.ListByForum(slug, req.Since, &req.Pagination)
 		if err != nil {
 			logrus.Error(err.Message)
 			return cntx.JSON(err.HTTPCode, err.Response())
@@ -129,7 +140,6 @@ func (fh *ForumHandler) GetThreadsByForumHandler() echo.HandlerFunc {
 
 func (fh *ForumHandler) GetUsersByForumHandler() echo.HandlerFunc {
 	type Request struct {
-		Slug  string `json:"slug" validate:"required,gte=3,lte=64"`
 		Since string `query:"since"`
 		models.Pagination
 	}
@@ -141,12 +151,13 @@ func (fh *ForumHandler) GetUsersByForumHandler() echo.HandlerFunc {
 			return cntx.JSON(err.HTTPCode, err.Response())
 		}
 
-		if _, err := fh.forumUcase.GetBySlug(req.Slug); err != nil {
+		slug := cntx.Param("slug")
+		if _, err := fh.forumUcase.GetBySlug(slug); err != nil {
 			logrus.Error(err.Message)
 			return cntx.JSON(err.HTTPCode, err.Response())
 		}
 
-		users, err := fh.userUcase.ListByForum(req.Slug, req.Since, &req.Pagination)
+		users, err := fh.userUcase.ListByForum(slug, req.Since, &req.Pagination)
 		if err != nil {
 			logrus.Error(err.Message)
 			return cntx.JSON(err.HTTPCode, err.Response())
