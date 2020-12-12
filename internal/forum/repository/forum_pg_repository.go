@@ -27,10 +27,10 @@ func (fr *ForumPgRepository) Insert(forum *models.Forum) error {
 	row := tx.QueryRow(
 		`INSERT INTO forums(title, author, slug)
 		VALUES ($1, $2, $3)
-		RETURNING posts, threads`,
+		RETURNING author, slug, posts, threads`,
 		forum.Title, forum.User, forum.Slug)
 
-	err = row.Scan(&forum.Posts, &forum.Threads)
+	err = row.Scan(&forum.User, &forum.Slug, &forum.Posts, &forum.Threads)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -62,7 +62,7 @@ func (fr *ForumPgRepository) SelectByPostID(postID uint64) (*models.Forum, error
 	forum := &models.Forum{}
 
 	row := fr.dbConn.QueryRow(
-		`SELECT title, author, slug, posts, threads
+		`SELECT f.title, f.author, f.slug, f.posts, f.threads
 		FROM forums AS f
 		JOIN posts AS p ON p.forum=f.slug
 		WHERE p.id=$1`,

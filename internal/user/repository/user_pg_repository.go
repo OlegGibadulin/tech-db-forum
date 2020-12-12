@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -112,6 +113,44 @@ func (ur *UserPgRepository) SelectByPostID(postID uint64) (*models.User, error) 
 	return user, nil
 }
 
+func buildValuesQuery(valuesCount int) string {
+	/*
+		($1, $2, ...)
+	*/
+	var values []string
+	for i := 0; i < valuesCount; i++ {
+		value := i + 1
+		values = append(values, fmt.Sprintf("$%d", value))
+	}
+	valuesQuery := fmt.Sprintf("(%s)", strings.Join(values, ", "))
+	return valuesQuery
+}
+
+func (ur *UserPgRepository) SelectExistingUsersCount(nicknames []string) (int, error) {
+	var usersCount int
+	var values []interface{}
+
+	selectQuery := "SELECT COUNT(nickname) FROM users WHERE nickname IN"
+
+	filterQuery := buildValuesQuery(len(nicknames))
+	for _, nickname := range nicknames {
+		values = append(values, nickname)
+	}
+
+	resultQuery := strings.Join([]string{
+		selectQuery,
+		filterQuery,
+	}, " ")
+
+	row := ur.dbConn.QueryRow(resultQuery, values...)
+
+	err := row.Scan(&usersCount)
+	if err != nil {
+		return 0, err
+	}
+	return usersCount, nil
+}
+
 func (ur *UserPgRepository) SelectAllByNicknameOrEmail(nickname string, email string) ([]*models.User, error) {
 	rows, err := ur.dbConn.Query(
 		`SELECT nickname, fullname, email, about
@@ -145,8 +184,7 @@ func (ur *UserPgRepository) SelectAllByForum(forumSlug string, since string, pgn
 	selectQuery := `
 		SELECT u.nickname, u.fullname, u.email, u.about
 		FROM forum_user AS fu
-		JOIN users AS u ON u.nickname=fu.nickname
-		WHERE forum=$1`
+		JOIN users AS u ON u.nickname=fu.nickname AND fu.forum=$1`
 	values = append(values, forumSlug)
 
 	var sortQuery string
@@ -165,7 +203,11 @@ func (ur *UserPgRepository) SelectAllByForum(forumSlug string, since string, pgn
 	var filterQuery string
 	if since != "" {
 		ind := len(values) + 1
-		filterQuery = "AND u.nickname > $" + strconv.Itoa(ind)
+		if pgnt.Desc {
+			filterQuery = "AND u.nickname < $" + strconv.Itoa(ind)
+		} else {
+			filterQuery = "AND u.nickname > $" + strconv.Itoa(ind)
+		}
 		values = append(values, since)
 	}
 

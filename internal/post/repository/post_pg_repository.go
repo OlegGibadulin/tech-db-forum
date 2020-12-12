@@ -131,59 +131,6 @@ func (pr *PostPgRepository) SelectByID(postID uint64) (*models.Post, error) {
 	return post, nil
 }
 
-func (pr *PostPgRepository) SelectNotExistingParentPosts(posts []*models.Post) ([]uint64, error) {
-	/*
-		SELECT newp.parent FROM
-		(VALUES (1), (2), (3)) as newp(parent)
-		LEFT OUTER JOIN posts as oldp on oldp.id=newp.parent
-		WHERE oldp.id IS NULL
-	*/
-	var values []interface{}
-
-	var parentPosts []string
-	for _, post := range posts {
-		if post.Parent != 0 { // 0 is root
-			values = append(values, post.Parent)
-			ind := len(values)
-			parentPost := fmt.Sprintf("($%d)", strconv.Itoa(ind))
-			parentPosts = append(parentPosts, parentPost)
-		}
-	}
-	valuesQuery := strings.Join(parentPosts, ", ") // ($1), ($2), ($3), ...
-	parentPostsQuery := fmt.Sprintf("(VALUES %s) as newp(parent)", valuesQuery)
-
-	selectQuery := "SELECT newp.parent FROM"
-	diffQuery := `
-		LEFT OUTER JOIN posts as oldp on oldp.id=newp.parent
-		WHERE oldp.id IS NULL`
-
-	resultQuery := strings.Join([]string{
-		selectQuery,
-		parentPostsQuery,
-		diffQuery,
-	}, " ")
-
-	rows, err := pr.dbConn.Query(resultQuery, values...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var postsID []uint64
-	for rows.Next() {
-		var postID uint64
-		err := rows.Scan(&postID)
-		if err != nil {
-			return nil, err
-		}
-		postsID = append(postsID, postID)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return postsID, nil
-}
-
 func (pr *PostPgRepository) SelectAllByThreadFlat(
 	threadID uint64,
 	since uint64,
@@ -199,9 +146,9 @@ func (pr *PostPgRepository) SelectAllByThreadFlat(
 
 	var sortQuery string
 	if pgnt.Desc {
-		sortQuery = "ORDER BY created DESC"
+		sortQuery = "ORDER BY id DESC"
 	} else {
-		sortQuery = "ORDER BY created"
+		sortQuery = "ORDER BY id"
 	}
 
 	var pgntQuery string
@@ -213,7 +160,11 @@ func (pr *PostPgRepository) SelectAllByThreadFlat(
 	var filterQuery string
 	if since != 0 {
 		ind := len(values) + 1
-		filterQuery = "AND id > $" + strconv.Itoa(ind)
+		if pgnt.Desc {
+			filterQuery = "AND id < $" + strconv.Itoa(ind)
+		} else {
+			filterQuery = "AND id > $" + strconv.Itoa(ind)
+		}
 		values = append(values, since)
 	}
 
@@ -277,8 +228,15 @@ func (pr *PostPgRepository) SelectAllByThreadTree(
 		ind := len(values) + 1
 		subSelectQuery := fmt.Sprintf("(SELECT path FROM posts WHERE id=$%d)", ind)
 
+		var subFilterQuery string
+		if pgnt.Desc {
+			subFilterQuery = "AND path <"
+		} else {
+			subFilterQuery = "AND path >"
+		}
+
 		filterQuery = strings.Join([]string{
-			"AND path >",
+			subFilterQuery,
 			subSelectQuery,
 		}, " ")
 		values = append(values, since)
@@ -346,7 +304,14 @@ func getSelectParentsQuery(
 		SELECT path[1]
 		FROM posts
 		WHERE id=$3`
-		subSelectQuery = fmt.Sprintf("AND path[1] < (%s)", subSelectQuery)
+
+		var filterQuery string
+		if pgnt.Desc {
+			filterQuery = "AND path[1] <"
+		} else {
+			filterQuery = "AND path[1] >"
+		}
+		subSelectQuery = fmt.Sprintf("%s (%s)", filterQuery, subSelectQuery)
 		values = append(values, since)
 	}
 

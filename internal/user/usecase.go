@@ -11,6 +11,7 @@ type UserUsecase interface {
 	GetByNickname(nickname string) (*models.User, *errors.Error)
 	GetByEmail(email string) (*models.User, *errors.Error)
 	GetByPostID(postID uint64) (*models.User, *errors.Error)
+	CheckUsersExistence(uniqNicknames []string) *errors.Error
 	ListByNicknameOrEmail(nickname string, email string) ([]*models.User, *errors.Error)
 	ListByForum(forumSlug string, since string, pgnt *models.Pagination) ([]*models.User, *errors.Error)
 }

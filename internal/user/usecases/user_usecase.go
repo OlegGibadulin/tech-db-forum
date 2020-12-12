@@ -98,6 +98,20 @@ func (uu *UserUsecase) GetByPostID(postID uint64) (*models.User, *errors.Error) 
 	return user, nil
 }
 
+func (uu *UserUsecase) CheckUsersExistence(uniqNicknames []string) *errors.Error {
+	if len(uniqNicknames) == 0 {
+		return nil
+	}
+	count, err := uu.userRepo.SelectExistingUsersCount(uniqNicknames)
+	if err != nil {
+		return errors.New(CodeInternalError, err)
+	}
+	if count != len(uniqNicknames) {
+		return errors.BuildByMsg(CodeUserDoesNotExist, "one of passed id", "")
+	}
+	return nil
+}
+
 func (uu *UserUsecase) ListByNicknameOrEmail(nickname string, email string) ([]*models.User, *errors.Error) {
 	users, err := uu.userRepo.SelectAllByNicknameOrEmail(nickname, email)
 	if err != nil {

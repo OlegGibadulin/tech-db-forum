@@ -14,3 +14,7 @@ type Post struct {
 	Thread   uint64    `json:"thread" validate:"gte=0"`
 	Created  time.Time `json:"created"`
 }
+
+const Flat = "flat"
+const Tree = "tree"
+const ParentTree = "parent_tree"
