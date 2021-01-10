@@ -45,10 +45,12 @@ CREATE TABLE IF NOT EXISTS threads (
     votes integer NOT NULL DEFAULT 0,
     slug citext NOT NULL
 );
+CREATE INDEX IF NOT EXISTS threads_slug ON threads (slug);
 CREATE INDEX IF NOT EXISTS threads_forum ON threads (forum);
-CREATE INDEX IF NOT EXISTS threads_slug ON threads (slug, id);
-CREATE INDEX IF NOT EXISTS threads_id_forum ON threads (id, forum);
+CREATE INDEX IF NOT EXISTS threads_author ON threads (author);
 CREATE INDEX IF NOT EXISTS threads_forum_created ON threads (forum, created);
+CREATE INDEX IF NOT EXISTS threads_created ON threads (created);
+CREATE INDEX IF NOT EXISTS threads_cover ON threads (id, title, author, message, created, forum, votes, slug);
 
 
 CREATE TABLE IF NOT EXISTS posts (
@@ -62,11 +64,13 @@ CREATE TABLE IF NOT EXISTS posts (
     created timestamp with time zone NOT NULL DEFAULT now(),
     path INTEGER[] NOT NULL
 );
-CREATE INDEX IF NOT EXISTS posts_thread ON posts (thread);
-CREATE INDEX IF NOT EXISTS posts_thread_id_asc ON posts (thread, id ASC);
-CREATE INDEX IF NOT EXISTS posts_thread_id_desc ON posts (thread, id DESC);
-CREATE INDEX IF NOT EXISTS posts_thread_path_asc ON posts (thread, path ASC);
-CREATE INDEX IF NOT EXISTS posts_thread_path_desc ON posts (thread, path DESC);
+CREATE INDEX IF NOT EXISTS posts_thread_id ON posts (thread, id);
+CREATE INDEX IF NOT EXISTS posts_author ON posts (author);
+CREATE INDEX IF NOT EXISTS posts_forum ON posts (forum);
+CREATE INDEX IF NOT EXISTS posts_thread_created_id ON posts (thread, created, id);
+CREATE INDEX IF NOT EXISTS posts_thread_path ON posts (thread, path);
+CREATE INDEX IF NOT EXISTS posts_thread_parent_path ON posts (thread, parent, path);
+CREATE INDEX IF NOT EXISTS posts_thread_path_path ON posts ((path[1]), path);
 
 
 CREATE TABLE IF NOT EXISTS votes (

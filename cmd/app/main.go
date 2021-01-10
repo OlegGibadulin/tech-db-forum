@@ -65,11 +65,11 @@ func main() {
 	// Middleware
 	e := echo.New()
 	mw := mwares.NewMiddlewareManager()
-	e.Use(mw.PanicRecovering, mw.AccessLog)
+	// e.Use(mw.PanicRecovering, mw.AccessLog)
 
 	// Delivery
 	userHandler := userHandler.NewUserHandler(userUcase)
-	threadHandler := threadHandler.NewThreadHandler(threadUcase, userUcase, postUcase)
+	threadHandler := threadHandler.NewThreadHandler(threadUcase, userUcase, postUcase, forumUcase)
 	forumHandler := forumHandler.NewForumHandler(forumUcase, userUcase, threadUcase)
 	postHandler := postHandler.NewPostHandler(postUcase, userUcase, threadUcase, forumUcase)
 	serviceHandler := serviceHandler.NewServiceHandler(serviceUcase)

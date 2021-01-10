@@ -8,7 +8,6 @@ import (
 	"github.com/OlegGibadulin/tech-db-forum/internal/user"
 	reader "github.com/OlegGibadulin/tech-db-forum/tools/request_reader"
 	"github.com/labstack/echo/v4"
-	"github.com/sirupsen/logrus"
 )
 
 type UserHandler struct {
@@ -35,12 +34,12 @@ func (uh *UserHandler) CreateUserHandler() echo.HandlerFunc {
 	return func(cntx echo.Context) error {
 		req := &Request{}
 		if err := reader.NewRequestReader(cntx).Read(req); err != nil {
-			logrus.Error(err.Message)
+			// logrus.Error(err.Message)
 			return cntx.JSON(err.HTTPCode, err.Response())
 		}
 
 		if err := uh.userUcase.Create(&req.User); err != nil {
-			logrus.Error(err.Message)
+			// logrus.Error(err.Message)
 			return cntx.JSON(err.HTTPCode, err.Response())
 		}
 		return cntx.JSON(http.StatusCreated, req.User)
@@ -57,7 +56,7 @@ func (uh *UserHandler) UpdateUserHandler() echo.HandlerFunc {
 	return func(cntx echo.Context) error {
 		req := &Request{}
 		if err := reader.NewRequestReader(cntx).Read(req); err != nil {
-			logrus.Error(err.Message)
+			// logrus.Error(err.Message)
 			return cntx.JSON(err.HTTPCode, err.Response())
 		}
 
@@ -70,7 +69,7 @@ func (uh *UserHandler) UpdateUserHandler() echo.HandlerFunc {
 
 		user, err := uh.userUcase.Update(nickname, userData)
 		if err != nil {
-			logrus.Error(err.Message)
+			// logrus.Error(err.Message)
 			return cntx.JSON(err.HTTPCode, err.Response())
 		}
 		return cntx.JSON(http.StatusOK, user)
@@ -82,7 +81,7 @@ func (uh *UserHandler) GetUserHandler() echo.HandlerFunc {
 		nickname := cntx.Param("nickname")
 		user, err := uh.userUcase.GetByNickname(nickname)
 		if err != nil {
-			logrus.Error(err.Message)
+			// logrus.Error(err.Message)
 			return cntx.JSON(err.HTTPCode, err.Response())
 		}
 		return cntx.JSON(http.StatusOK, user)
